@@ -87,7 +87,7 @@ type PhishingScenario = {
   clueTitle: string;
   clueInstruction: string;
   classificationError: string;
-  clues: { id: string; label: string }[];
+  clues: { id: string; label: string; feedback: string }[];
 };
 const PHISHING_PROMPT_LABEL = 'Is this legitimate or fake?';
 const PHISHING_SCENARIOS: PhishingScenario[] = [
@@ -102,10 +102,14 @@ const PHISHING_SCENARIOS: PhishingScenario[] = [
     classificationError:
       'This email is fake. Urgency, a suspicious sender, a strange link, and an unusual signature are warning signs.',
     clues: [
-      { id: 'sender', label: 'Suspicious sender address' },
-      { id: 'subject', label: 'Urgent subject line' },
-      { id: 'link', label: 'Unsafe verification link' },
-      { id: 'signature', label: 'Unusual signature' },
+      { id: 'sender', label: 'Suspicious sender address', feedback: 'Phishing emails come from a strange email address.' },
+      { id: 'subject', label: 'Urgent subject line', feedback: 'Scammers often try to make you act fast before you have time to think.' },
+      {
+        id: 'link',
+        label: 'Unsafe verification link',
+        feedback: "Don't click on strange links. You can see a link's address by hovering over the link.",
+      },
+      { id: 'signature', label: 'Unusual signature', feedback: "This department doesn't exist at KONE." },
     ],
   },
   {
@@ -119,10 +123,28 @@ const PHISHING_SCENARIOS: PhishingScenario[] = [
     classificationError:
       'This text message is fake. It uses impersonation, an odd request, and social engineering to try to get your account.',
     clues: [
-      { id: 'sender', label: 'Unusual sender' },
-      { id: 'request', label: 'Odd request' },
-      { id: 'pressure', label: 'Social engineering' },
-      { id: 'signature', label: 'Badly written signature' },
+      {
+        id: 'sender',
+        label: 'Unusual sender',
+        feedback: "It would be unusual for the CEO to contact you like this directly. Verify surprising requests through a trusted channel.",
+      },
+      {
+        id: 'request',
+        label: 'Can I use yours?',
+        feedback:
+          "It's unusual for the CEO to send you a text message. Stay alert! These days scammers can impersonate real people convincingly.",
+      },
+      {
+        id: 'pressure',
+        label: 'Social engineering',
+        feedback:
+          "This is called social engineering. It's when criminals try to appeal to your feelings to get you to do what they want.",
+      },
+      {
+        id: 'signature',
+        label: 'Misspelled signature',
+        feedback: "The signature and the CEO's name are misspelled. These kinds of small mistakes can reveal a phishing attempt.",
+      },
     ],
   },
   {
@@ -136,10 +158,18 @@ const PHISHING_SCENARIOS: PhishingScenario[] = [
     classificationError:
       'This email is legitimate. The KONE address, normal meeting request, clear signature, and complete footer all support that.',
     clues: [
-      { id: 'sender', label: 'KONE email address' },
-      { id: 'request', label: 'Normal meeting request' },
-      { id: 'signature', label: 'Professional signature' },
-      { id: 'footer', label: 'Complete company details' },
+      { id: 'sender', label: 'KONE email address', feedback: "The sender's address looks real." },
+      {
+        id: 'request',
+        label: 'Normal meeting request',
+        feedback: 'This seems like a perfectly normal message, especially if you really have recently spoken to this person.',
+      },
+      {
+        id: 'signature',
+        label: 'Professional signature',
+        feedback: 'This is a real KONE person and signature matches KONE conventions.',
+      },
+      { id: 'footer', label: 'Complete company details', feedback: 'This is a very typical KONE email.' },
     ],
   },
   {
@@ -153,10 +183,22 @@ const PHISHING_SCENARIOS: PhishingScenario[] = [
     classificationError:
       'This LinkedIn message is fake. It mixes urgency, impersonation, and an external sign-in request.',
     clues: [
-      { id: 'channel', label: 'Unusual outreach channel' },
-      { id: 'urgency', label: 'Urgency' },
-      { id: 'signin', label: 'Sign-in request' },
-      { id: 'domain', label: 'Suspicious domain' },
+      {
+        id: 'channel',
+        label: 'Unusual outreach channel',
+        feedback: 'KONE HR would not contact you in LinkedIn on work-related matters.',
+      },
+      {
+        id: 'urgency',
+        label: 'Urgency',
+        feedback: 'Scammers try to create a sense of urgency to make you act fast.',
+      },
+      {
+        id: 'signin',
+        label: 'Sign-in request',
+        feedback: 'Scammers often try to make you click on harmful links.',
+      },
+      { id: 'domain', label: 'Suspicious domain', feedback: 'This is not a real KONE address.' },
     ],
   },
 ];
@@ -176,6 +218,67 @@ const IntegrityHeader = ({ level, max }: { level: number; max: number }) => {
           animate={{ width: `${percentage}%` }}
           className="h-full bg-brand-blue shadow-[0_0_8px_rgba(20,80,245,0.2)]"
         />
+      </div>
+    </div>
+  );
+};
+
+const MissionCompleteScreen = ({
+  missionLabel,
+  title = 'Mission complete',
+  feedbackText,
+  currentLevel,
+  maxLevel,
+  onContinue,
+}: {
+  missionLabel: string;
+  title?: string;
+  feedbackText: string;
+  currentLevel: number;
+  maxLevel: number;
+  onContinue: () => void;
+}) => {
+  const percentage = Math.round((currentLevel / maxLevel) * 100);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden">
+        <div className="px-6 py-5 xl:px-8 xl:py-6 border-b border-black/10 bg-black text-white">
+          <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">{missionLabel}</p>
+          <h3 className="mt-2 text-2xl xl:text-3xl font-bold">{title}</h3>
+        </div>
+
+        <div className="p-6 xl:p-8 space-y-6">
+          <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-5 space-y-4 text-brand-blue">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="w-6 h-6 shrink-0" />
+              <p className="font-medium whitespace-pre-line">{feedbackText}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-bold text-black">Protection level</p>
+              <p className="text-xs font-mono text-brand-blue">{percentage}%</p>
+            </div>
+            <div className="h-2 bg-black/10 rounded-full overflow-hidden border border-black/10">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${percentage}%` }}
+                className="h-full bg-brand-blue"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              onClick={onContinue}
+              className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-brand-blue hover:opacity-90 text-white text-sm xl:text-base font-bold transition-colors"
+            >
+              Continue mission
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -208,15 +311,17 @@ const ConfidentialitySimulator = ({
   const [labelAssignments, setLabelAssignments] = useState(createEmptyLabelAssignments);
   const [channelAssignments, setChannelAssignments] = useState(createEmptyChannelAssignments);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [missionComplete, setMissionComplete] = useState(false);
+  const [successFeedbackText, setSuccessFeedbackText] = useState('');
 
   useEffect(() => {
     setActivityStep('labels');
     setLabelAssignments(createEmptyLabelAssignments());
     setChannelAssignments(createEmptyChannelAssignments());
     setDraggingId(null);
+    setMissionComplete(false);
+    setSuccessFeedbackText('');
   }, [resetKey]);
-
-  const percentage = Math.round((currentLevel / maxLevel) * 100);
 
   const findLabelMeta = (labelId: ConfidentialityLabelId | null) =>
     CONFIDENTIALITY_LABELS.find((label) => label.id === labelId) ?? null;
@@ -290,10 +395,11 @@ const ConfidentialitySimulator = ({
       return;
     }
 
-    onAnswer(
-      true,
+    onClearFeedback();
+    setSuccessFeedbackText(
       "That's right! You stopped important information from ending up in the criminals' hands. Our protection level has increased.",
     );
+    setMissionComplete(true);
   };
 
   const resetActiveExercise = () => {
@@ -307,7 +413,7 @@ const ConfidentialitySimulator = ({
   };
 
   const handleFeedbackAction = () => {
-    if (feedback?.isCorrect) {
+    if (missionComplete) {
       onContinue();
       return;
     }
@@ -434,93 +540,15 @@ const ConfidentialitySimulator = ({
     );
   }
 
-  if (feedback?.isCorrect) {
+  if (missionComplete) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden">
-          <div className="px-6 py-5 xl:px-8 xl:py-6 border-b border-black/10 bg-black text-white">
-            <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">CONFIDENTIALITY MISSION</p>
-            <h3 className="mt-2 text-2xl xl:text-3xl font-bold">Mission complete</h3>
-          </div>
-
-          <div className="p-6 xl:p-8 space-y-6">
-            <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-5 space-y-4 text-brand-blue">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="w-6 h-6 shrink-0" />
-                <p className="font-medium">{feedback.text}</p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-black">Protection level</p>
-                <p className="text-xs font-mono text-brand-blue">{percentage}%</p>
-              </div>
-              <div className="h-2 bg-black/10 rounded-full overflow-hidden border border-black/10">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  className="h-full bg-brand-blue"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={handleFeedbackAction}
-                className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-brand-blue hover:opacity-90 text-white text-sm xl:text-base font-bold transition-colors"
-              >
-                Continue mission
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (feedback?.isCorrect) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden">
-          <div className="px-6 py-5 xl:px-8 xl:py-6 border-b border-black/10 bg-black text-white">
-            <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">PASSWORD MISSION</p>
-            <h3 className="mt-2 text-2xl xl:text-3xl font-bold">Mission complete</h3>
-          </div>
-
-          <div className="p-6 xl:p-8 space-y-6">
-            <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-5 space-y-4 text-brand-blue">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="w-6 h-6 shrink-0" />
-                <p className="font-medium whitespace-pre-line">{feedback.text}</p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-black">Protection level</p>
-                <p className="text-xs font-mono text-brand-blue">{Math.round((100 * currentLevel) / maxLevel)}%</p>
-              </div>
-              <div className="h-2 bg-black/10 rounded-full overflow-hidden border border-black/10">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.round((100 * currentLevel) / maxLevel)}%` }}
-                  className="h-full bg-brand-blue"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={handleFeedbackAction}
-                className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-brand-blue hover:opacity-90 text-white text-sm xl:text-base font-bold transition-colors"
-              >
-                Continue mission
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MissionCompleteScreen
+        missionLabel="CONFIDENTIALITY MISSION"
+        feedbackText={successFeedbackText}
+        currentLevel={Math.min(currentLevel + 1, maxLevel)}
+        maxLevel={maxLevel}
+        onContinue={handleFeedbackAction}
+      />
     );
   }
 
@@ -840,7 +868,7 @@ const ConfidentialitySimulator = ({
       )}
 
       <AnimatePresence>
-        {feedback && (
+        {feedback && !feedback.isCorrect && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -856,30 +884,11 @@ const ConfidentialitySimulator = ({
               )}
               <div className="space-y-4">
                 <p className="font-medium">{feedback.text}</p>
-                {feedback.isCorrect && (
-                  <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-bold text-black">Protection level</p>
-                      <p className="text-xs font-mono text-brand-blue">{percentage}%</p>
-                    </div>
-                    <div className="h-2 bg-black/10 rounded-full overflow-hidden border border-black/10">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${percentage}%` }}
-                        className="h-full bg-brand-blue"
-                      />
-                    </div>
-                  </div>
-                )}
                 <button
                   onClick={handleFeedbackAction}
-                  className={`px-6 py-2 xl:px-7 xl:py-3 rounded-lg text-sm xl:text-base font-bold transition-colors ${
-                    feedback.isCorrect
-                      ? 'bg-brand-blue hover:opacity-90 text-white'
-                      : 'bg-white hover:bg-brand-blue/5 text-black border border-black/15'
-                  }`}
+                  className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-white hover:bg-brand-blue/5 text-black border border-black/15 text-sm xl:text-base font-bold transition-colors"
                 >
-                  {feedback.isCorrect ? 'Continue mission' : 'Try again'}
+                  Try again
                 </button>
               </div>
             </div>
@@ -914,26 +923,29 @@ const PhishingSimulator = ({
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [classification, setClassification] = useState<MessageClassification | null>(null);
   const [selectedClues, setSelectedClues] = useState<string[]>([]);
+  const [showClueFeedback, setShowClueFeedback] = useState(false);
   const [missionComplete, setMissionComplete] = useState(false);
-
+  const [successFeedbackText, setSuccessFeedbackText] = useState('');
 
   useEffect(() => {
     setScenarioIndex(0);
     setClassification(null);
     setSelectedClues([]);
+    setShowClueFeedback(false);
     setMissionComplete(false);
+    setSuccessFeedbackText('');
   }, [challenge.id]);
 
   const scenario = PHISHING_SCENARIOS[scenarioIndex];
   const clueTarget = scenario.clues.length;
   const isClueSelected = (clueId: string) => selectedClues.includes(clueId);
-  const percentage = Math.round((currentLevel / maxLevel) * 100);
-
+  const getClue = (clueId: string) => scenario.clues.find((clue) => clue.id === clueId);
 
   const resetScenario = () => {
     onSetStep('activity');
     setClassification(null);
     setSelectedClues([]);
+    setShowClueFeedback(false);
     onClearFeedback();
   };
 
@@ -941,20 +953,20 @@ const PhishingSimulator = ({
     setScenarioIndex((prev) => prev + 1);
     setClassification(null);
     setSelectedClues([]);
+    setShowClueFeedback(false);
     onClearFeedback();
   };
 
   const handleFeedbackAction = () => {
-    if (feedback?.isCorrect || missionComplete) {
+    if (missionComplete) {
       onContinue();
       return;
     }
-
-    resetScenario();
+    onClearFeedback();
   };
 
   const handleClassification = (choice: MessageClassification) => {
-    if (feedback) return;
+    if (feedback || showClueFeedback) return;
     setClassification(choice);
     if (choice !== scenario.expectedClassification) {
       onAnswer(false, scenario.classificationError);
@@ -964,7 +976,7 @@ const PhishingSimulator = ({
   };
 
   const toggleClue = (clueId: string) => {
-    if (feedback || classification !== scenario.expectedClassification) return;
+    if (feedback || showClueFeedback || classification !== scenario.expectedClassification) return;
     setSelectedClues((prev) => (prev.includes(clueId) ? prev.filter((id) => id !== clueId) : [...prev, clueId]));
   };
 
@@ -982,26 +994,44 @@ const PhishingSimulator = ({
       return;
     }
 
-    if (scenarioIndex === PHISHING_SCENARIOS.length - 1) {
-      setMissionComplete(true);
-      onAnswer(
-        true,
-        "That's right! Always check these details to make sure messages are legitimate.\n\nYou defended KONE systems with strong cybersecurity practices. Our protection level has increased.",
-      );
-      return;
-    }
-
-    moveToNextScenario();
+    onClearFeedback();
+    setShowClueFeedback(true);
   };
 
   const interactiveLineClass = (clueId: string) =>
     `rounded-md px-2 py-1 transition-colors ${
-      classification !== scenario.expectedClassification
+      classification !== scenario.expectedClassification || showClueFeedback
         ? 'cursor-default'
         : isClueSelected(clueId)
           ? 'bg-brand-blue/10 text-brand-blue'
           : 'cursor-pointer hover:bg-brand-blue/5'
     }`;
+
+  const renderClueFeedback = (clueId: string) => {
+    if (!showClueFeedback) return null;
+
+    const clue = getClue(clueId);
+    if (!clue) return null;
+
+    return (
+      <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-3 text-sm text-black/75">
+        {clue.feedback}
+      </div>
+    );
+  };
+
+  const handleScenarioContinue = () => {
+    if (scenarioIndex === PHISHING_SCENARIOS.length - 1) {
+      setShowClueFeedback(false);
+      setSuccessFeedbackText(
+        "That's right! Always check these details to make sure messages are legitimate.\n\nYou defended KONE systems with strong cybersecurity practices. Our protection level has increased.",
+      );
+      setMissionComplete(true);
+      return;
+    }
+
+    moveToNextScenario();
+  };
 
   const renderScenarioSurface = () => {
     switch (scenario.id) {
@@ -1022,21 +1052,27 @@ const PhishingSimulator = ({
 
             <div className="p-6 xl:p-8 space-y-6 xl:space-y-7">
               <div className="space-y-1 pb-4 border-b border-black/10">
-                <div className="flex text-xs">
-                  <span className="w-16 text-black/60 font-mono">FROM:</span>
-                  <button type="button" onClick={() => toggleClue('sender')} className={interactiveLineClass('sender')}>
-                    <span className="text-black font-medium">IT support &lt;admin-security-alert@company-it-verify.net&gt;</span>
-                  </button>
+                <div className="grid gap-2 text-xs md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
+                  <div className="flex">
+                    <span className="w-16 text-black/60 font-mono">FROM:</span>
+                    <button type="button" onClick={() => toggleClue('sender')} className={interactiveLineClass('sender')}>
+                      <span className="text-black font-medium">IT support &lt;admin-security-alert@company-it-verify.net&gt;</span>
+                    </button>
+                  </div>
+                  {renderClueFeedback('sender')}
                 </div>
                 <div className="flex text-xs">
                   <span className="w-16 text-black/60 font-mono">TO:</span>
                   <span className="text-black/80 px-2 py-1">Employee &lt;you@bitville.com&gt;</span>
                 </div>
-                <div className="flex text-xs">
-                  <span className="w-16 text-black/60 font-mono">SUBJ:</span>
-                  <button type="button" onClick={() => toggleClue('subject')} className={interactiveLineClass('subject')}>
-                    <span className="text-brand-blue font-bold tracking-tight">Urgent: account suspension imminent</span>
-                  </button>
+                <div className="grid gap-2 text-xs md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
+                  <div className="flex">
+                    <span className="w-16 text-black/60 font-mono">SUBJ:</span>
+                    <button type="button" onClick={() => toggleClue('subject')} className={interactiveLineClass('subject')}>
+                      <span className="text-brand-blue font-bold tracking-tight">Urgent: account suspension imminent</span>
+                    </button>
+                  </div>
+                  {renderClueFeedback('subject')}
                 </div>
               </div>
 
@@ -1050,28 +1086,34 @@ const PhishingSimulator = ({
                   To prevent lockout, you must verify your credentials within the next 60 minutes by clicking the secure
                   link below:
                 </p>
-                <div className="py-4">
+                <div className="py-4 space-y-3">
                   <div className="inline-block px-6 py-3 xl:px-7 xl:py-4 bg-brand-blue text-white rounded font-bold text-sm xl:text-base shadow-md">
                     Verify account now
                   </div>
-                  <div className="mt-2 text-[10px] text-black/60 font-mono">
-                    <button type="button" onClick={() => toggleClue('link')} className={interactiveLineClass('link')}>
-                      Link: http://verify-auth-bitville.secure-portal.xyz/login?token=88231
-                    </button>
+                  <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_260px] md:items-start">
+                    <div className="mt-2 text-[10px] text-black/60 font-mono">
+                      <button type="button" onClick={() => toggleClue('link')} className={interactiveLineClass('link')}>
+                        Link: http://verify-auth-bitville.secure-portal.xyz/login?token=88231
+                      </button>
+                    </div>
+                    {renderClueFeedback('link')}
                   </div>
                 </div>
                 <p className="text-xs italic text-black/65">
                   Failure to comply will result in permanent account deletion and loss of all local files.
                 </p>
-                <div>
+                <div className="space-y-2">
                   <p>Regards,</p>
-                  <button
-                    type="button"
-                    onClick={() => toggleClue('signature')}
-                    className={`mt-1 ${interactiveLineClass('signature')}`}
-                  >
-                    The global security team
-                  </button>
+                  <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
+                    <button
+                      type="button"
+                      onClick={() => toggleClue('signature')}
+                      className={`justify-self-start ${interactiveLineClass('signature')}`}
+                    >
+                      The global security team
+                    </button>
+                    {renderClueFeedback('signature')}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1086,31 +1128,45 @@ const PhishingSimulator = ({
                 <span>MESSAGES</span>
                 <span>100%</span>
               </div>
-              <div className="border-b border-black/10 px-4 py-3 bg-white flex items-center gap-3">
-                <button type="button" onClick={() => toggleClue('sender')} className={`flex items-center gap-3 ${interactiveLineClass('sender')}`}>
-                  <img
-                    src={philippeDelormePhoto}
-                    alt="Philippe Delorme"
-                    className="w-11 h-11 rounded-full object-cover border border-black/10"
-                  />
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-black">Philippe Delorme</p>
-                    <p className="text-xs text-black/55">Mobile</p>
-                  </div>
-                </button>
+              <div className="border-b border-black/10 px-4 py-3 bg-white space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-16 text-black/60 font-mono">FROM:</span>
+                  <button type="button" onClick={() => toggleClue('sender')} className={`flex items-center gap-3 ${interactiveLineClass('sender')}`}>
+                    <img
+                      src={philippeDelormePhoto}
+                      alt="Philippe Delorme"
+                      className="w-11 h-11 rounded-full object-cover border border-black/10"
+                    />
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-black">Philippe Delorme</p>
+                      <p className="text-xs text-black/55">Mobile</p>
+                    </div>
+                  </button>
+                </div>
+                {renderClueFeedback('sender')}
               </div>
               <div className="p-4 bg-slate-100 space-y-3">
                 <div className="max-w-[88%] rounded-[1.4rem] rounded-tl-sm bg-white px-4 py-3 text-sm text-black/80 shadow-sm border border-black/5 space-y-3">
                   <p>Dear ,</p>
-                  <button type="button" onClick={() => toggleClue('request')} className={`${interactiveLineClass('request')} text-left`}>
-                    I need some assistance with an urgent matter. I&apos;ve been locked out of my account. Can I use yours?
-                  </button>
-                  <button type="button" onClick={() => toggleClue('pressure')} className={`${interactiveLineClass('pressure')} text-left`}>
-                    I will tell your supervisor that you have been very helpful.
-                  </button>
-                  <button type="button" onClick={() => toggleClue('signature')} className={`${interactiveLineClass('signature')} text-left`}>
-                    br philip
-                  </button>
+                  <p>I need some assistance with an urgent matter.</p>
+                  <div className="space-y-2">
+                    <button type="button" onClick={() => toggleClue('request')} className={`${interactiveLineClass('request')} text-left`}>
+                      I&apos;ve been locked out of my account. Can I use yours?
+                    </button>
+                    {renderClueFeedback('request')}
+                  </div>
+                  <div className="space-y-2">
+                    <button type="button" onClick={() => toggleClue('pressure')} className={`${interactiveLineClass('pressure')} text-left`}>
+                      I will tell your supervisor that you have been very helpful.
+                    </button>
+                    {renderClueFeedback('pressure')}
+                  </div>
+                  <div className="space-y-2">
+                    <button type="button" onClick={() => toggleClue('signature')} className={`${interactiveLineClass('signature')} text-left`}>
+                      br philip
+                    </button>
+                    {renderClueFeedback('signature')}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1130,29 +1186,39 @@ const PhishingSimulator = ({
               <p className="text-[10px] font-mono tracking-widest text-white/70">DIRECT MESSAGE</p>
             </div>
             <div className="p-6 space-y-5 bg-[#f3f8fd]">
-              <button type="button" onClick={() => toggleClue('channel')} className={`w-full rounded-2xl border border-black/10 bg-white p-4 text-left shadow-sm ${interactiveLineClass('channel')}`}>
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#0A66C2] text-white grid place-items-center font-bold">LN</div>
-                  <div>
-                    <p className="font-bold text-black">Laura Nieminen</p>
-                    <p className="text-sm text-black/60">Recruitment Partner at KONE</p>
+              <div className="space-y-2">
+                <button type="button" onClick={() => toggleClue('channel')} className={`w-full rounded-2xl border border-black/10 bg-white p-4 text-left shadow-sm ${interactiveLineClass('channel')}`}>
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#0A66C2] text-white grid place-items-center font-bold">LN</div>
+                    <div>
+                      <p className="font-bold text-black">Laura Nieminen</p>
+                      <p className="text-sm text-black/60">Recruitment Partner at KONE</p>
+                    </div>
                   </div>
-                </div>
-              </button>
+                </button>
+                {renderClueFeedback('channel')}
+              </div>
 
               <div className="ml-auto max-w-[92%] rounded-[1.4rem] rounded-tr-sm bg-white border border-black/10 px-4 py-4 text-sm text-black/80 shadow-sm space-y-3">
-                <button type="button" onClick={() => toggleClue('channel')} className={`${interactiveLineClass('channel')} text-left`}>
-                  Hi, we are updating employee profiles for a leadership review.
-                </button>
-                <button type="button" onClick={() => toggleClue('signin')} className={`${interactiveLineClass('signin')} text-left`}>
-                  Please open the secure form below and sign in with your work account
-                </button>
-                <button type="button" onClick={() => toggleClue('urgency')} className={`${interactiveLineClass('urgency')} text-left`}>
-                  today so we can keep your profile active.
-                </button>
-                <button type="button" onClick={() => toggleClue('domain')} className={`${interactiveLineClass('domain')} text-left font-mono text-[12px] text-[#0A66C2] break-all`}>
-                  https://kone-talent-review-secure.com
-                </button>
+                <p>Hi, we are updating employee profiles for a leadership review.</p>
+                <div className="space-y-2">
+                  <button type="button" onClick={() => toggleClue('signin')} className={`${interactiveLineClass('signin')} text-left`}>
+                    Please open the secure form below and sign in with your work account
+                  </button>
+                  {renderClueFeedback('signin')}
+                </div>
+                <div className="space-y-2">
+                  <button type="button" onClick={() => toggleClue('urgency')} className={`${interactiveLineClass('urgency')} text-left`}>
+                    immediately so we can keep your profile active.
+                  </button>
+                  {renderClueFeedback('urgency')}
+                </div>
+                <div className="space-y-2">
+                  <button type="button" onClick={() => toggleClue('domain')} className={`${interactiveLineClass('domain')} text-left font-mono text-[12px] text-[#0A66C2] break-all`}>
+                    https://kone-talent-review-secure.com
+                  </button>
+                  {renderClueFeedback('domain')}
+                </div>
               </div>
             </div>
           </div>
@@ -1173,11 +1239,14 @@ const PhishingSimulator = ({
             </div>
             <div className="p-6 xl:p-8 space-y-6">
               <div className="space-y-1 pb-4 border-b border-black/10">
-                <div className="flex text-xs">
-                  <span className="w-16 text-black/60 font-mono">FROM:</span>
-                  <button type="button" onClick={() => toggleClue('sender')} className={interactiveLineClass('sender')}>
-                    <span className="text-black font-medium">katja.virtanen@kone.com</span>
-                  </button>
+                <div className="grid gap-2 text-xs md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
+                  <div className="flex">
+                    <span className="w-16 text-black/60 font-mono">FROM:</span>
+                    <button type="button" onClick={() => toggleClue('sender')} className={interactiveLineClass('sender')}>
+                      <span className="text-black font-medium">katja.virtanen@kone.com</span>
+                    </button>
+                  </div>
+                  {renderClueFeedback('sender')}
                 </div>
                 <div className="flex text-xs">
                   <span className="w-16 text-black/60 font-mono">TO:</span>
@@ -1186,32 +1255,41 @@ const PhishingSimulator = ({
               </div>
 
               <div className="text-black/80 text-sm xl:text-base leading-relaxed space-y-4">
-                <button type="button" onClick={() => toggleClue('request')} className={`${interactiveLineClass('request')} text-left`}>
-                  Hello! Which day would be good for you for a meeting? I have time this week.
-                </button>
+                <div className="space-y-2">
+                  <button type="button" onClick={() => toggleClue('request')} className={`${interactiveLineClass('request')} text-left`}>
+                    Hello! Which day would be good for you for a meeting? I have time this week.
+                  </button>
+                  {renderClueFeedback('request')}
+                </div>
 
-                <button type="button" onClick={() => toggleClue('signature')} className={`${interactiveLineClass('signature')} block text-left`}>
-                  <span className="whitespace-pre-line">
-                    {`Best regards,
-Katja Virtanen
+                <div className="space-y-2">
+                  <p>Best regards,</p>
+                  <button type="button" onClick={() => toggleClue('signature')} className={`${interactiveLineClass('signature')} block text-left`}>
+                    <span className="whitespace-pre-line">
+                      {`Katja Virtanen
 Project Manager
 Global Operations`}
-                  </span>
-                </button>
+                    </span>
+                  </button>
+                  {renderClueFeedback('signature')}
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => toggleClue('footer')}
-                  className={`${interactiveLineClass('footer')} block w-full text-left pt-4 border-t border-black/10`}
-                >
-                  <span className="whitespace-pre-line text-sm text-black/70 block">
-                    {`KONE Corporation
+                <div className="space-y-2 border-t border-black/10 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleClue('footer')}
+                    className={`${interactiveLineClass('footer')} block w-full text-left`}
+                  >
+                    <span className="whitespace-pre-line text-sm text-black/70 block">
+                      {`KONE Corporation
 Keilasatama 3
 
 02150 Espoo, Finland`}
-                  </span>
-                  <img src={koneLogo} alt="KONE" className="mt-4 h-9 w-auto" />
-                </button>
+                    </span>
+                    <img src={koneLogo} alt="KONE" className="mt-4 h-9 w-auto" />
+                  </button>
+                  {renderClueFeedback('footer')}
+                </div>
               </div>
             </div>
           </div>
@@ -1289,48 +1367,15 @@ Keilasatama 3
     );
   }
 
-  if (missionComplete && feedback?.isCorrect) {
+  if (missionComplete) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden">
-          <div className="px-6 py-5 xl:px-8 xl:py-6 border-b border-black/10 bg-black text-white">
-            <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">PHISHING MISSION</p>
-            <h3 className="mt-2 text-2xl xl:text-3xl font-bold">Mission complete</h3>
-          </div>
-
-          <div className="p-6 xl:p-8 space-y-6">
-            <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-5 space-y-4 text-brand-blue">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="w-6 h-6 shrink-0" />
-                <p className="font-medium whitespace-pre-line">{feedback.text}</p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-black">Protection level</p>
-                <p className="text-xs font-mono text-brand-blue">{percentage}%</p>
-              </div>
-              <div className="h-2 bg-black/10 rounded-full overflow-hidden border border-black/10">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  className="h-full bg-brand-blue"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={handleFeedbackAction}
-                className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-brand-blue hover:opacity-90 text-white text-sm xl:text-base font-bold transition-colors"
-              >
-                Continue mission
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MissionCompleteScreen
+        missionLabel="PHISHING MISSION"
+        feedbackText={successFeedbackText}
+        currentLevel={Math.min(currentLevel + 1, maxLevel)}
+        maxLevel={maxLevel}
+        onContinue={handleFeedbackAction}
+      />
     );
   }
 
@@ -1355,22 +1400,6 @@ Keilasatama 3
                 </div>
               </div>
 
-              {feedback.isCorrect && (
-                <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-black">Protection level</p>
-                    <p className="text-xs font-mono text-brand-blue">{percentage}%</p>
-                  </div>
-                  <div className="h-2 bg-black/10 rounded-full overflow-hidden border border-black/10">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percentage}%` }}
-                      className="h-full bg-brand-blue"
-                    />
-                  </div>
-                </div>
-              )}
-
               <button
                 onClick={handleFeedbackAction}
                 className={`w-full px-6 py-3 rounded-lg font-bold transition-colors ${
@@ -1384,7 +1413,7 @@ Keilasatama 3
             </div>
           ) : (
             <>
-            <div className="space-y-1">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm xl:text-base font-bold text-black">{scenario.title}</h3>
                   <p className="text-xs font-mono text-brand-blue">
@@ -1395,19 +1424,21 @@ Keilasatama 3
               </div>
 
               <div className="grid grid-cols-1 gap-3">
-                {[
+                {[ 
                   { id: 'legitimate' as const, label: 'Legitimate' },
                   { id: 'fake' as const, label: 'Fake' },
                 ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
-                    disabled={!!feedback && classification !== 'fake'}
+                    disabled={showClueFeedback}
                     onClick={() => handleClassification(option.id)}
                     className={`w-full p-4 xl:p-5 rounded-xl border text-left text-sm xl:text-base transition-all flex items-center justify-between group ${
                       classification === option.id
                         ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
-                        : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
+                        : showClueFeedback
+                          ? 'bg-white border-black/10 text-black/45'
+                          : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
                     }`}
                   >
                     <span>{option.label}</span>
@@ -1419,10 +1450,14 @@ Keilasatama 3
               {classification === scenario.expectedClassification && (
                 <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-2">
                   <p className="text-sm xl:text-base font-bold text-black">{scenario.clueTitle}</p>
-                  <p className="text-sm xl:text-base text-black/70">{scenario.clueInstruction}</p>
-                  <p className="text-xs font-mono text-brand-blue">
-                    {selectedClues.length} / {clueTarget} selected
+                  <p className="text-sm xl:text-base text-black/70">
+                    {showClueFeedback ? 'Review the feedback next to each clue, then continue.' : scenario.clueInstruction}
                   </p>
+                  {!showClueFeedback && (
+                    <p className="text-xs font-mono text-brand-blue">
+                      {selectedClues.length} / {clueTarget} selected
+                    </p>
+                  )}
                 </div>
               )}
             </>
@@ -1431,13 +1466,23 @@ Keilasatama 3
 
         {renderScenarioSurface()}
 
-        {classification === scenario.expectedClassification && !feedback && (
+        {classification === scenario.expectedClassification && !feedback && !showClueFeedback && (
           <button
             type="button"
             onClick={submitClues}
             className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
           >
             {scenario.expectedClassification === 'fake' ? 'Check warning signs' : 'Check trustworthy signs'}
+          </button>
+        )}
+
+        {showClueFeedback && !feedback && (
+          <button
+            type="button"
+            onClick={handleScenarioContinue}
+            className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+          >
+            Continue
           </button>
         )}
       </div>
@@ -1474,12 +1519,16 @@ const PasswordLoginSimulator = ({
   const [password, setPassword] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [currentMfaCode, setCurrentMfaCode] = useState(createMfaCode);
+  const [missionComplete, setMissionComplete] = useState(false);
+  const [successFeedbackText, setSuccessFeedbackText] = useState('');
 
   useEffect(() => {
     setLoginStep('password');
     setPassword('');
     setMfaCode('');
     setCurrentMfaCode(createMfaCode());
+    setMissionComplete(false);
+    setSuccessFeedbackText('');
   }, [resetKey]);
 
   const submitPassword = () => {
@@ -1509,10 +1558,11 @@ const PasswordLoginSimulator = ({
 
   const handlePasswordManagerChoice = (choice: 'yes' | 'no') => {
     if (choice === 'yes') {
-      onAnswer(
-        true,
+      onClearFeedback();
+      setSuccessFeedbackText(
         'Well done! With strong passwords you protect your accounts and KONE.\n\nYou defended KONE systems with strong password practices. Our protection level has increased.',
       );
+      setMissionComplete(true);
       return;
     }
 
@@ -1525,7 +1575,7 @@ const PasswordLoginSimulator = ({
   };
 
   const handleFeedbackAction = () => {
-    if (feedback?.isCorrect) {
+    if (missionComplete) {
       onContinue();
       return;
     }
@@ -1603,6 +1653,18 @@ const PasswordLoginSimulator = ({
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (missionComplete) {
+    return (
+      <MissionCompleteScreen
+        missionLabel="PASSWORD MISSION"
+        feedbackText={successFeedbackText}
+        currentLevel={Math.min(currentLevel + 1, maxLevel)}
+        maxLevel={maxLevel}
+        onContinue={handleFeedbackAction}
+      />
     );
   }
 
@@ -1792,7 +1854,7 @@ const PasswordLoginSimulator = ({
       )}
 
       <AnimatePresence>
-        {feedback && (
+        {feedback && !feedback.isCorrect && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1808,26 +1870,11 @@ const PasswordLoginSimulator = ({
               )}
               <div className="space-y-4">
                 <p className="font-medium">{feedback.text}</p>
-                {feedback.isCorrect && loginStep === 'manager' && (
-                  <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-bold text-black">Protection level</p>
-                      <p className="text-xs font-mono text-brand-blue">{Math.round((100 * currentLevel) / maxLevel)}%</p>
-                    </div>
-                    <div className="h-2 bg-black/10 rounded-full overflow-hidden border border-black/10">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.round((100 * currentLevel) / maxLevel)}%` }}
-                        className="h-full bg-brand-blue"
-                      />
-                    </div>
-                  </div>
-                )}
                 <button
                   onClick={handleFeedbackAction}
-                  className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-brand-blue hover:opacity-90 text-white text-sm xl:text-base font-bold transition-colors"
+                  className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-white hover:bg-brand-blue/5 text-black border border-black/15 text-sm xl:text-base font-bold transition-colors"
                 >
-                  {feedback.isCorrect ? 'Continue mission' : 'Try again'}
+                  Try again
                 </button>
               </div>
             </div>
@@ -2004,21 +2051,350 @@ const ColleagueCheckSimulator = ({
   );
 };
 
+type StandardMissionStep =
+  | {
+      id: string;
+      kind: 'quiz';
+      title: string;
+      scenario: string;
+      options: Challenge['options'];
+    }
+  | {
+      id: string;
+      kind: 'info';
+      title: string;
+      body: string;
+      buttonLabel?: string;
+    }
+  | {
+      id: string;
+      kind: 'placeholder';
+      title: string;
+      body: string;
+      buttonLabel?: string;
+    }
+  | {
+      id: string;
+      kind: 'hotspot';
+      title: string;
+      prompt: string;
+      scene: 'badge' | 'desk' | 'gate';
+      note: string;
+      errorFeedback: string;
+    };
+
+type StandardMissionConfig = {
+  finalFeedback: string;
+  steps: StandardMissionStep[];
+};
+
+const STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
+  'shared-physical-security': {
+    finalFeedback: 'Great job! You prevented unauthorized access to our information. Our protection level has increased.',
+    steps: [
+      {
+        id: 'physical-security-importance',
+        kind: 'info',
+        title: 'Why physical security matters',
+        body:
+          'Cybersecurity is not only about screens and systems. Visitors, visible papers, open workstations, and uncontrolled access to facilities can all expose important KONE information in the real world.',
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'physical-security-badge',
+        kind: 'hotspot',
+        title: 'Missing ID badge',
+        prompt: 'What is wrong here? Click the problem area.',
+        scene: 'badge',
+        note: "Visual designer note: The idea is that the badge will appear on the person's chest after the missing badge has been identified.",
+        errorFeedback: 'Look again. The issue is on the person and relates to visible identification.',
+      },
+      {
+        id: 'physical-security-desk',
+        kind: 'hotspot',
+        title: 'Unsecured workstation',
+        prompt: 'What is wrong here? Click the problem area.',
+        scene: 'desk',
+        note: 'Visual designer note: Here the computer screen will close and the documents disappear.',
+        errorFeedback: 'Look again. Sensitive work materials have been left visible on the desk.',
+      },
+      {
+        id: 'physical-security-gate',
+        kind: 'hotspot',
+        title: 'Tailgating at the gate',
+        prompt: 'What is wrong here? Click the problem area.',
+        scene: 'gate',
+        note: 'Visual designer note: After completion, the gate will be closed and the second car left outside.',
+        errorFeedback: 'Look again. The problem is with access control at the gate.',
+      },
+    ],
+  },
+  'shared-devices': {
+    finalFeedback: 'Great job! You protected our devices. Our protection level has increased.',
+    steps: [
+      {
+        id: 'devices-mobile-protection',
+        kind: 'placeholder',
+        title: 'Mobile devices',
+        body: 'Placeholder: Intune, encryption, passcodes/PINs, inactivity timer, regular updates',
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'devices-connections',
+        kind: 'placeholder',
+        title: 'Connections',
+        body: 'Placeholder: Connections to wifi and VPN',
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'devices-lost-device',
+        kind: 'placeholder',
+        title: 'Lost device response',
+        body: 'Placeholder: What to do if you lose your mobile device',
+        buttonLabel: 'Continue',
+      },
+    ],
+  },
+  'office-computer-use': {
+    finalFeedback: 'Great job! You protected our computers. Our protection level has increased.',
+    steps: [
+      {
+        id: 'computer-use-remote-work',
+        kind: 'placeholder',
+        title: 'Remote work',
+        body: 'Placeholder: How to work remotely',
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'computer-use-malware',
+        kind: 'placeholder',
+        title: 'Malware',
+        body: 'Placeholder: Malware',
+        buttonLabel: 'Continue',
+      },
+    ],
+  },
+};
+
+const renderPhysicalSecurityScene = ({
+  scene,
+  onHotspotSelect,
+  disabled,
+}: {
+  scene: 'badge' | 'desk' | 'gate';
+  onHotspotSelect: (isCorrect: boolean) => void;
+  disabled: boolean;
+}) => {
+  const hotspotClass =
+    'absolute rounded-xl border border-dashed border-brand-blue/60 bg-brand-blue/10 text-brand-blue text-[11px] font-bold hover:bg-brand-blue/15 transition-colors disabled:cursor-not-allowed disabled:opacity-70';
+
+  if (scene === 'badge') {
+    return (
+      <div className="relative h-[360px] rounded-2xl border border-black/10 bg-gradient-to-b from-slate-100 via-white to-slate-50 overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-20 bg-slate-200/70" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-slate-300/70" />
+        <div className="absolute left-1/2 top-16 h-16 w-16 -translate-x-1/2 rounded-full bg-slate-800" />
+        <div className="absolute left-1/2 top-32 h-40 w-28 -translate-x-1/2 rounded-[2rem] bg-slate-800" />
+        <div className="absolute left-[calc(50%-90px)] top-42 h-18 w-6 rotate-12 rounded-full bg-slate-800" />
+        <div className="absolute left-[calc(50%+66px)] top-42 h-18 w-6 -rotate-12 rounded-full bg-slate-800" />
+        <div className="absolute left-[calc(50%-42px)] top-[274px] h-20 w-7 rounded-full bg-slate-800" />
+        <div className="absolute left-[calc(50%+14px)] top-[274px] h-20 w-7 rounded-full bg-slate-800" />
+
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onHotspotSelect(true)}
+          className={`${hotspotClass} left-1/2 top-[150px] h-20 w-20 -translate-x-1/2`}
+          aria-label="Missing badge area"
+        >
+          Chest
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onHotspotSelect(false)}
+          className={`${hotspotClass} left-1/2 top-10 h-16 w-16 -translate-x-1/2`}
+          aria-label="Head"
+        >
+          Head
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onHotspotSelect(false)}
+          className={`${hotspotClass} left-14 bottom-8 h-16 w-24`}
+          aria-label="Floor area"
+        >
+          Floor
+        </button>
+      </div>
+    );
+  }
+
+  if (scene === 'desk') {
+    return (
+      <div className="relative h-[360px] rounded-2xl border border-black/10 bg-gradient-to-b from-slate-100 via-white to-slate-50 overflow-hidden">
+        <div className="absolute inset-x-8 bottom-10 h-24 rounded-2xl bg-[#caa87b] shadow-[0_12px_24px_rgba(0,0,0,0.12)]" />
+        <div className="absolute left-16 bottom-32 h-24 w-36 rounded-xl border border-black/15 bg-slate-900">
+          <div className="h-full w-full rounded-[10px] bg-gradient-to-br from-brand-blue/30 via-sky-100 to-white p-4 text-left text-[11px] font-bold text-slate-900">
+            CUSTOMER
+            <br />
+            CASE NOTES
+          </div>
+        </div>
+        <div className="absolute left-32 bottom-28 h-5 w-8 rounded-b bg-slate-500" />
+        <div className="absolute right-24 bottom-20 h-16 w-24 -rotate-6 rounded-lg border border-black/10 bg-white shadow-sm" />
+        <div className="absolute right-36 bottom-16 h-16 w-24 rotate-3 rounded-lg border border-black/10 bg-white shadow-sm" />
+        <div className="absolute right-14 bottom-18 h-10 w-10 rounded-full border border-black/10 bg-white" />
+
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onHotspotSelect(true)}
+          className={`${hotspotClass} left-12 bottom-12 h-40 w-[320px]`}
+          aria-label="Visible information"
+        >
+          Visible information
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onHotspotSelect(false)}
+          className={`${hotspotClass} right-10 bottom-10 h-14 w-14 rounded-full`}
+          aria-label="Coffee cup"
+        >
+          Mug
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-[360px] rounded-2xl border border-black/10 bg-gradient-to-b from-sky-100 via-white to-slate-100 overflow-hidden">
+      <div className="absolute inset-x-0 bottom-0 h-28 bg-slate-300/80" />
+      <div className="absolute left-14 bottom-12 h-12 w-28 rounded-2xl bg-slate-700" />
+      <div className="absolute left-40 bottom-12 h-12 w-28 rounded-2xl bg-slate-500" />
+      <div className="absolute right-28 bottom-12 h-12 w-28 rounded-2xl bg-slate-700" />
+      <div className="absolute left-1/2 top-8 h-44 w-3 -translate-x-1/2 rounded-full bg-black/50" />
+      <div className="absolute left-[calc(50%-70px)] top-[132px] h-3 w-72 rounded-full bg-red-500/90 rotate-[8deg]" />
+      <div className="absolute left-[calc(50%+26px)] top-[118px] h-34 w-4 rounded-full bg-black/50" />
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onHotspotSelect(true)}
+        className={`${hotspotClass} left-[calc(50%-86px)] top-[92px] h-20 w-48`}
+        aria-label="Gate opening"
+      >
+        Open gate
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onHotspotSelect(false)}
+        className={`${hotspotClass} right-20 bottom-8 h-14 w-24`}
+        aria-label="Second car"
+      >
+        Car
+      </button>
+    </div>
+  );
+};
+
 const StandardChallengeSimulator = ({
   challenge,
   step,
   onSetStep,
   onAnswer,
+  onClearFeedback,
   feedback,
+  currentLevel,
+  maxLevel,
   onContinue,
 }: {
   challenge: Challenge;
   step: 'intro' | 'mission' | 'activity';
   onSetStep: (step: 'intro' | 'mission' | 'activity') => void;
   onAnswer: (isCorrect: boolean, feedback: string) => void;
+  onClearFeedback: () => void;
   feedback: { text: string; isCorrect: boolean } | null;
+  currentLevel: number;
+  maxLevel: number;
   onContinue: () => void;
 }) => {
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [missionComplete, setMissionComplete] = useState(false);
+  const [successFeedbackText, setSuccessFeedbackText] = useState('');
+  const missionConfig = STANDARD_MISSION_CONFIGS[challenge.id];
+
+  useEffect(() => {
+    setCurrentStepIndex(0);
+    setMissionComplete(false);
+    setSuccessFeedbackText('');
+  }, [challenge.id]);
+
+  const missionSteps: StandardMissionStep[] =
+    missionConfig?.steps ?? [
+      {
+        id: `${challenge.id}-step-1`,
+        kind: 'quiz',
+        title: challenge.topic,
+        scenario: challenge.scenario,
+        options: challenge.options,
+      },
+    ];
+
+  const currentStep = missionSteps[currentStepIndex];
+  const finalFeedbackText = missionConfig?.finalFeedback;
+
+  const advanceOrComplete = (completionFeedback?: string) => {
+    if (currentStepIndex === missionSteps.length - 1) {
+      onClearFeedback();
+      setSuccessFeedbackText(completionFeedback ?? finalFeedbackText ?? 'Mission complete.');
+      setMissionComplete(true);
+      return;
+    }
+
+    setCurrentStepIndex((prev) => prev + 1);
+    onClearFeedback();
+  };
+
+  const handleOptionSelect = (option: Challenge['options'][number]) => {
+    if (feedback) return;
+
+    if (!option.isCorrect) {
+      onAnswer(false, option.feedback);
+      return;
+    }
+
+    advanceOrComplete(option.feedback);
+  };
+
+  const handleStepContinue = () => {
+    if (feedback) return;
+    advanceOrComplete();
+  };
+
+  const handleHotspotSelect = (isCorrect: boolean) => {
+    if (feedback || currentStep.kind !== 'hotspot') return;
+
+    if (!isCorrect) {
+      onAnswer(false, currentStep.errorFeedback);
+      return;
+    }
+
+    advanceOrComplete();
+  };
+
+  const handleFeedbackAction = () => {
+    if (missionComplete) {
+      onContinue();
+      return;
+    }
+
+    onClearFeedback();
+  };
+
   if (step === 'intro') {
     return (
       <div className="space-y-6">
@@ -2087,32 +2463,142 @@ const StandardChallengeSimulator = ({
     );
   }
 
+  if (missionComplete) {
+    return (
+      <MissionCompleteScreen
+        missionLabel={`${challenge.topic.toUpperCase()} MISSION`}
+        feedbackText={successFeedbackText}
+        currentLevel={Math.min(currentLevel + 1, maxLevel)}
+        maxLevel={maxLevel}
+        onContinue={handleFeedbackAction}
+      />
+    );
+  }
+
   return (
-    <>
-      <div className="p-8 xl:p-10 bg-white rounded-2xl border border-black/10 relative overflow-hidden shadow-sm shadow-black/10">
-        <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-blue" />
-        <p className="text-lg xl:text-xl text-black/80 leading-relaxed italic">"{challenge.scenario}"</p>
+    <div className="space-y-6">
+      <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm xl:text-base font-bold text-black">Mission step</p>
+          <p className="text-xs font-mono text-brand-blue">
+            {currentStepIndex + 1} / {missionSteps.length}
+          </p>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {challenge.options.map((option, idx) => (
-          <button
-            key={idx}
-            disabled={!!feedback}
-            onClick={() => onAnswer(option.isCorrect, option.feedback)}
-            className={`w-full p-5 xl:p-6 rounded-xl border text-left text-base xl:text-lg transition-all ${
-              feedback
-                ? option.isCorrect
-                  ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
-                  : 'bg-white border-black/10 text-black/45'
-                : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
+      {currentStep.kind === 'quiz' ? (
+        <>
+          <div className="p-8 xl:p-10 bg-white rounded-2xl border border-black/10 relative overflow-hidden shadow-sm shadow-black/10">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-blue" />
+            <div className="space-y-3">
+              <h3 className="text-xl xl:text-2xl font-bold text-black">{currentStep.title}</h3>
+              <p className="text-lg xl:text-xl text-black/80 leading-relaxed italic">"{currentStep.scenario}"</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {currentStep.options.map((option, idx) => (
+              <button
+                key={idx}
+                disabled={!!feedback}
+                onClick={() => handleOptionSelect(option)}
+                className={`w-full p-5 xl:p-6 rounded-xl border text-left text-base xl:text-lg transition-all ${
+                  feedback
+                    ? option.isCorrect
+                      ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                      : 'bg-white border-black/10 text-black/45'
+                    : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : currentStep.kind === 'info' || currentStep.kind === 'placeholder' ? (
+        <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden">
+          <div className="px-6 py-5 xl:px-8 xl:py-6 border-b border-black/10 bg-black text-white">
+            <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">
+              {currentStep.kind === 'placeholder' ? 'PLACEHOLDER STEP' : 'MISSION INFO'}
+            </p>
+            <h3 className="mt-2 text-2xl xl:text-3xl font-bold">{currentStep.title}</h3>
+          </div>
+          <div className="p-6 xl:p-8 space-y-5">
+            <div
+              className={`rounded-xl border p-5 xl:p-6 space-y-3 ${
+                currentStep.kind === 'placeholder'
+                  ? 'border-dashed border-black/20 bg-black/[0.03]'
+                  : 'border-brand-blue/20 bg-brand-blue/5'
+              }`}
+            >
+              <p className="body-copy text-black/80">{currentStep.body}</p>
+            </div>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={handleStepContinue}
+                className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+              >
+                {currentStep.buttonLabel ?? 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4 xl:space-y-6">
+          <div className="bg-brand-blue/5 rounded-xl border border-brand-blue/15 p-5 space-y-3">
+            <h3 className="text-lg xl:text-xl font-bold text-black">{currentStep.title}</h3>
+            <p className="text-sm xl:text-base text-black/75">{currentStep.prompt}</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 p-5 xl:p-6 space-y-5">
+            {renderPhysicalSecurityScene({
+              scene: currentStep.scene,
+              onHotspotSelect: handleHotspotSelect,
+              disabled: !!feedback,
+            })}
+
+            <div className="rounded-xl border border-dashed border-black/15 bg-black/[0.02] p-4">
+              <p className="text-xs font-mono tracking-widest text-black/50 mb-2">VISUAL DESIGNER NOTE</p>
+              <p className="text-sm xl:text-base text-black/70">{currentStep.note}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {feedback && !missionComplete && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-6 rounded-xl border ${
+              feedback.isCorrect ? 'bg-brand-blue/10 border-brand-blue/20 text-brand-blue' : 'bg-black border-black text-white'
             }`}
           >
-            {option.text}
-          </button>
-        ))}
-      </div>
-    </>
+            <div className="flex items-start gap-3">
+              {feedback.isCorrect ? (
+                <ShieldCheck className="w-6 h-6 shrink-0" />
+              ) : (
+                <ShieldAlert className="w-6 h-6 shrink-0" />
+              )}
+              <div className="space-y-4">
+                <p className="font-medium">{feedback.text}</p>
+                <button
+                  onClick={handleFeedbackAction}
+                  className={`px-6 py-2 xl:px-7 xl:py-3 rounded-lg text-sm xl:text-base font-bold transition-colors ${
+                    feedback.isCorrect
+                      ? 'bg-brand-blue hover:opacity-90 text-white'
+                      : 'bg-white hover:bg-brand-blue/5 text-black border border-black/15'
+                  }`}
+                >
+                  {feedback.isCorrect ? 'Continue step' : 'Try again'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -2227,16 +2713,19 @@ export default function App() {
 
   const handleAnswer = (isCorrect: boolean, feedbackText: string) => {
     setFeedback({ text: feedbackText, isCorrect });
-    if (isCorrect && activeChallenge) {
-      if (!completedIds.includes(activeChallenge.id)) {
-        setCompletedIds([...completedIds, activeChallenge.id]);
-      }
-    }
   };
 
   const finishChallenge = () => {
+    const nextCompletedIds =
+      activeChallenge && !completedIds.includes(activeChallenge.id)
+        ? [...completedIds, activeChallenge.id]
+        : completedIds;
+
+    setCompletedIds(nextCompletedIds);
     resetChallengeSession();
-    if (totalProgressCount === totalProgressMax) {
+
+    const nextProgressCount = nextCompletedIds.length + completedColleagueScenarioIds.length;
+    if (nextProgressCount === totalProgressMax) {
       navigateTo('victory');
     } else {
       navigateTo('dashboard');
@@ -2558,43 +3047,13 @@ export default function App() {
             step={standardMissionStep}
             onSetStep={setStandardMissionStep}
             onAnswer={handleAnswer}
+            onClearFeedback={clearFeedback}
             feedback={feedback}
+            currentLevel={totalProgressCount}
+            maxLevel={totalProgressMax}
             onContinue={finishChallenge}
           />
         )}
-
-        <AnimatePresence>
-          {feedback && !isPhishing && !isPasswordLoginPractice && !isConfidentialityMission && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`p-6 rounded-xl border ${
-                feedback.isCorrect ? 'bg-brand-blue/10 border-brand-blue/20 text-brand-blue' : 'bg-black border-black text-white'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                {feedback.isCorrect ? (
-                  <ShieldCheck className="w-6 h-6 shrink-0" />
-                ) : (
-                  <ShieldAlert className="w-6 h-6 shrink-0" />
-                )}
-                <div className="space-y-4">
-                  <p className="font-medium">{feedback.text}</p>
-                  <button
-                    onClick={finishChallenge}
-                    className={`px-6 py-2 xl:px-7 xl:py-3 rounded-lg text-sm xl:text-base font-bold transition-colors ${
-                      feedback.isCorrect
-                        ? 'bg-brand-blue hover:opacity-90 text-white'
-                        : 'bg-white hover:bg-brand-blue/5 text-black border border-black/15'
-                    }`}
-                  >
-                    {feedback.isCorrect ? 'Continue mission' : 'Try again'}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     );
   };
