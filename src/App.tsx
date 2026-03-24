@@ -31,6 +31,8 @@ import {
 } from './constants';
 import koneLogo from './assets/kone-logo.svg';
 import philippeDelormePhoto from './assets/philippe delorme ceo.jpg';
+import ceoCybersecurityVideo from './assets/CEO_Cybersecurity_compressed.mp4';
+import ceoCybersecurityTranscriptVtt from './assets/CEO_Cybersecurity.vtt?raw';
 
 const CONFIDENTIALITY_LABELS = [
   { id: 'Public', accent: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
@@ -222,6 +224,43 @@ const IntegrityHeader = ({ level, max }: { level: number; max: number }) => {
     </div>
   );
 };
+
+const parseVttTranscript = (vttContent: string) => {
+  const lines = vttContent
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(
+      (line) =>
+        line &&
+        line !== 'WEBVTT FILE' &&
+        line !== 'WEBVTT' &&
+        !/^\d+$/.test(line) &&
+        !/^\d{2}:\d{2}\.\d{3}\s-->/.test(line) &&
+        !/^\d{2}:\d{2}:\d{2}\.\d{3}\s-->/.test(line),
+    )
+    .map((line) => line.replace(/&amp;/g, '&'));
+
+  const paragraphs: string[] = [];
+  let currentParagraph = '';
+
+  lines.forEach((line) => {
+    const nextText = currentParagraph ? `${currentParagraph} ${line}` : line;
+    currentParagraph = nextText;
+
+    if (/[.!?]$/.test(line)) {
+      paragraphs.push(currentParagraph);
+      currentParagraph = '';
+    }
+  });
+
+  if (currentParagraph) {
+    paragraphs.push(currentParagraph);
+  }
+
+  return paragraphs;
+};
+
+const CEO_TRANSCRIPT_PARAGRAPHS = parseVttTranscript(ceoCybersecurityTranscriptVtt);
 
 const MissionCompleteScreen = ({
   missionLabel,
@@ -1894,6 +1933,7 @@ const ColleagueCheckSimulator = ({
 }) => {
   const [selectedDialogue, setSelectedDialogue] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; isCorrect: boolean } | null>(null);
+  const isTeamsScenario = scenario.surface === 'teams';
 
   useEffect(() => {
     setSelectedDialogue(null);
@@ -1906,7 +1946,7 @@ const ColleagueCheckSimulator = ({
   };
 
   const handleAnswerChoice = (answer: ColleagueCheckScenario['answers'][number]) => {
-    if (!selectedDialogue || feedback) return;
+    if ((!selectedDialogue && !isTeamsScenario) || feedback) return;
 
     setFeedback({
       text: answer.isCorrect ? answer.feedback : `Not quite. ${answer.feedback}`,
@@ -1950,41 +1990,62 @@ const ColleagueCheckSimulator = ({
         </div>
 
         <div className="space-y-5">
-          <div className="bg-white rounded-2xl border border-black/10 p-6 xl:p-8 shadow-sm shadow-black/10 space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm font-mono tracking-widest text-black/55">Start the conversation</p>
-              <h3 className="text-xl xl:text-2xl font-bold text-black">Dialogue options</h3>
-            </div>
+          {!isTeamsScenario && (
+            <div className="bg-white rounded-2xl border border-black/10 p-6 xl:p-8 shadow-sm shadow-black/10 space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-mono tracking-widest text-black/55">Start the conversation</p>
+                <h3 className="text-xl xl:text-2xl font-bold text-black">Dialogue options</h3>
+              </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              {scenario.dialogueOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => handleDialogueChoice(option)}
-                  className={`w-full p-4 rounded-xl border text-left text-sm xl:text-base transition-all flex items-center justify-between group ${
-                    selectedDialogue === option
-                      ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
-                      : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
-                  }`}
-                >
-                  <span>{option}</span>
-                  <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all text-brand-blue" />
-                </button>
-              ))}
+              <div className="grid grid-cols-1 gap-3">
+                {scenario.dialogueOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => handleDialogueChoice(option)}
+                    className={`w-full p-4 rounded-xl border text-left text-sm xl:text-base transition-all flex items-center justify-between group ${
+                      selectedDialogue === option
+                        ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                        : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
+                    }`}
+                  >
+                    <span>{option}</span>
+                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all text-brand-blue" />
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {selectedDialogue && (
+          {(selectedDialogue || isTeamsScenario) && (
             <div className="space-y-4">
               <div className="bg-white rounded-2xl border border-black/10 p-6 xl:p-8 shadow-sm shadow-black/10 space-y-4">
                 <div className="space-y-3">
-                  <div className="ml-auto max-w-[90%] rounded-2xl rounded-br-md bg-brand-blue text-white px-4 py-3 text-sm xl:text-base">
-                    {selectedDialogue}
-                  </div>
-                  <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-black text-white px-4 py-3 text-sm xl:text-base">
-                    {scenario.colleagueResponse}
-                  </div>
+                  {isTeamsScenario ? (
+                    <div className="rounded-2xl border border-black/10 bg-[#eef3fb] overflow-hidden">
+                      <div className="px-4 py-3 border-b border-black/10 bg-[#4f52b2] text-white flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-mono tracking-widest text-white/75">TEAMS MESSAGE</p>
+                          <p className="text-sm font-bold">{scenario.colleagueName}</p>
+                        </div>
+                        <p className="text-xs text-white/75">{scenario.colleagueRole}</p>
+                      </div>
+                      <div className="p-4 bg-white">
+                        <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-[#e8ebfa] text-black px-4 py-3 text-sm xl:text-base border border-[#d7dcfb]">
+                          {scenario.colleagueResponse}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="ml-auto max-w-[90%] rounded-2xl rounded-br-md bg-brand-blue text-white px-4 py-3 text-sm xl:text-base">
+                        {selectedDialogue}
+                      </div>
+                      <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-black text-white px-4 py-3 text-sm xl:text-base">
+                        {scenario.colleagueResponse}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-black/10 bg-brand-blue/5 p-5 space-y-4">
@@ -2103,28 +2164,28 @@ const STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
       {
         id: 'physical-security-badge',
         kind: 'hotspot',
-        title: 'Missing ID badge',
-        prompt: 'What is wrong here? Click the problem area.',
+        title: 'What is wrong here?',
+        prompt: 'Click the problem area.',
         scene: 'badge',
-        note: "Visual designer note: The idea is that the badge will appear on the person's chest after the missing badge has been identified.",
+        note: "Visual designer note: The idea here is that the learner has to notice that the badge is missing. The badge will appear on the person's chest after the missing badge has been identified.",
         errorFeedback: 'Look again. The issue is on the person and relates to visible identification.',
       },
       {
         id: 'physical-security-desk',
         kind: 'hotspot',
-        title: 'Unsecured workstation',
-        prompt: 'What is wrong here? Click the problem area.',
+        title: 'What is wrong here?',
+        prompt: 'Click the problem area.',
         scene: 'desk',
-        note: 'Visual designer note: Here the computer screen will close and the documents disappear.',
+        note: 'Visual designer note: Here the idea is to spot things that are wrong. The computer screen will be on and there are documents on the desk.computer screen will close and the documents disappear.',
         errorFeedback: 'Look again. Sensitive work materials have been left visible on the desk.',
       },
       {
         id: 'physical-security-gate',
         kind: 'hotspot',
-        title: 'Tailgating at the gate',
-        prompt: 'What is wrong here? Click the problem area.',
+        title: 'What is wrong here?',
+        prompt: 'Click the problem area.',
         scene: 'gate',
-        note: 'Visual designer note: After completion, the gate will be closed and the second car left outside.',
+        note: 'Visual designer note: The idea is that there is a car in the parking lot and the gate is open. After completion, the gate will be closed and the second car left outside.',
         errorFeedback: 'Look again. The problem is with access control at the gate.',
       },
     ],
@@ -2558,7 +2619,7 @@ const StandardChallengeSimulator = ({
               disabled: !!feedback,
             })}
 
-            <div className="rounded-xl border border-dashed border-black/15 bg-black/[0.02] p-4">
+            <div className="rounded-xl border-2 border-yellow-400 bg-yellow-50/70 p-4">
               <p className="text-xs font-mono tracking-widest text-black/50 mb-2">VISUAL DESIGNER NOTE</p>
               <p className="text-sm xl:text-base text-black/70">{currentStep.note}</p>
             </div>
@@ -2615,7 +2676,7 @@ export default function App() {
   const [passwordMissionStep, setPasswordMissionStep] = useState<'intro' | 'mission' | 'activity'>('intro');
   const [confidentialityMissionStep, setConfidentialityMissionStep] = useState<'intro' | 'mission' | 'activity'>('intro');
   const [standardMissionStep, setStandardMissionStep] = useState<'intro' | 'mission' | 'activity'>('intro');
-  const [missionIntroStage, setMissionIntroStage] = useState<'video' | 'content'>('video');
+  const [missionIntroStage, setMissionIntroStage] = useState<'video' | 'warning' | 'content'>('video');
 
   const getRoleChallenges = () => {
     switch (role) {
@@ -2682,12 +2743,15 @@ export default function App() {
       if (view === 'colleague-check') {
         resetColleagueCheckSession();
       }
+      if (prevView === 'mission-intro') {
+        setMissionIntroStage('video');
+      }
       setViewHistory((prev) => prev.slice(0, -1));
       setView(prevView);
     }
   };
 
-  const handleStart = () => navigateTo('villain-intro');
+  const handleStart = () => navigateTo('mission-intro');
 
   const selectRole = (selectedRole: Role) => {
     setRole(selectedRole);
@@ -2766,38 +2830,6 @@ export default function App() {
     </motion.div>
   );
 
-  const VillainIntroView = () => (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="page-narrow pt-16 xl:pt-20 pb-8 xl:pb-10 space-y-8 xl:space-y-10"
-    >
-      <div className="bg-white rounded-2xl p-6 md:p-10 xl:p-12 border border-black/10 shadow-sm shadow-black/10">
-        <div className="max-w-xl mx-auto space-y-6 text-center">
-          <p className="text-black/80 text-base xl:text-lg leading-relaxed">
-            KONE possesses valuable information that people with bad intentions try to access.
-          </p>
-          <p className="text-black/80 text-base xl:text-lg leading-relaxed">
-            Access to our systems can harm our employees, our customers, and KONE as a company.
-          </p>
-          <p className="text-black/80 text-base xl:text-lg leading-relaxed">
-            Cybersecurity is everyone&apos;s responsibility, and that&apos;s why it&apos;s also your responsibility to protect
-            KONE.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex justify-center">
-        <button
-          onClick={() => navigateTo('mission-intro')}
-          className="action-button bg-brand-blue hover:opacity-90 text-white rounded-full transform hover:scale-105 shadow-lg shadow-brand-blue/10"
-        >
-          Prepare defenses
-        </button>
-      </div>
-    </motion.div>
-  );
-
   const MissionIntroView = () => (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -2806,21 +2838,66 @@ export default function App() {
     >
       {missionIntroStage === 'video' ? (
         <div className="bg-white rounded-2xl p-4 md:p-6 xl:p-8 border border-black/10 shadow-sm shadow-black/10">
-          <div className="relative overflow-hidden rounded-xl border border-black/10 bg-black shadow-lg shadow-black/10">
-            <div className="absolute top-4 right-4 z-20">
-              <button
-                type="button"
-                onClick={() => setMissionIntroStage('content')}
-                className="px-4 py-2 rounded-full bg-white/90 text-black text-sm font-bold border border-black/10 hover:bg-white transition-colors shadow-sm"
-              >
-                Skip
-              </button>
+          <div className="space-y-6">
+            <div className="relative overflow-hidden rounded-xl border border-black/10 bg-black shadow-lg shadow-black/10">
+              <div className="absolute top-4 right-4 z-20">
+                <button
+                  type="button"
+                  onClick={() => setMissionIntroStage('warning')}
+                  className="px-4 py-2 rounded-full bg-white/90 text-black text-sm font-bold border border-black/10 hover:bg-white transition-colors shadow-sm"
+                >
+                  Skip
+                </button>
+              </div>
+              <div className="w-full aspect-video bg-black">
+                <video
+                  src={ceoCybersecurityVideo}
+                  controls
+                  preload="metadata"
+                  className="w-full h-full"
+                />
+              </div>
             </div>
-            <div className="w-full aspect-video flex items-center justify-center bg-black text-white">
-              <span className="text-3xl md:text-4xl xl:text-5xl font-black tracking-[0.25em]">CEO VIDEO</span>
+
+            <div className="rounded-xl border border-black/10 bg-brand-blue/5 p-5 xl:p-6 space-y-4">
+              <div className="space-y-1">
+                <p className="text-xs font-mono tracking-widest text-black/50">CEO MESSAGE</p>
+                <h3 className="text-xl xl:text-2xl font-bold text-black">Transcript</h3>
+              </div>
+              <div className="space-y-3 text-sm xl:text-base text-black/80 leading-relaxed">
+                {CEO_TRANSCRIPT_PARAGRAPHS.map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+      ) : missionIntroStage === 'warning' ? (
+        <>
+          <div className="bg-white rounded-2xl p-6 md:p-10 xl:p-12 border border-black/10 shadow-sm shadow-black/10">
+            <div className="max-w-xl mx-auto space-y-6 text-center">
+              <p className="text-black/80 text-base xl:text-lg leading-relaxed">
+                KONE possesses valuable information that people with bad intentions try to access.
+              </p>
+              <p className="text-black/80 text-base xl:text-lg leading-relaxed">
+                Access to our systems can harm our employees, our customers, and KONE as a company.
+              </p>
+              <p className="text-black/80 text-base xl:text-lg leading-relaxed">
+                Cybersecurity is everyone&apos;s responsibility, and that&apos;s why it&apos;s also your responsibility to protect
+                KONE.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              onClick={() => setMissionIntroStage('content')}
+              className="action-button bg-brand-blue hover:opacity-90 text-white rounded-full transform hover:scale-105 shadow-lg shadow-brand-blue/10"
+            >
+              The Mission
+            </button>
+          </div>
+        </>
       ) : (
         <>
           <div className="bg-white rounded-2xl p-6 md:p-10 xl:p-12 border border-black/10 shadow-sm shadow-black/10">
@@ -2861,7 +2938,7 @@ export default function App() {
               onClick={() => navigateTo('role-selection')}
               className="action-button bg-brand-blue hover:opacity-90 text-white rounded-full transform hover:scale-105 shadow-lg shadow-brand-blue/10"
             >
-              Let&apos;s go
+              Prepare defenses
             </button>
           </div>
         </>
@@ -3125,7 +3202,6 @@ export default function App() {
       <main className="app-shell">
         <AnimatePresence mode="wait">
           {view === 'intro' && <IntroView key="intro" />}
-          {view === 'villain-intro' && <VillainIntroView key="villain" />}
           {view === 'mission-intro' && <MissionIntroView key="mission" />}
           {view === 'role-selection' && <RoleSelectionView key="roles" />}
           {view === 'dashboard' && <DashboardView key="dash" />}

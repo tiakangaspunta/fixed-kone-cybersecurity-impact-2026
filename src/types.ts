@@ -29,6 +29,7 @@ export interface ColleagueCheckScenario {
   instructions: string;
   colleagueName: string;
   colleagueRole: string;
+  surface?: 'dialogue' | 'teams';
   dialogueOptions: string[];
   colleagueResponse: string;
   question: string;

@@ -94,4 +94,30 @@ export const COLLEAGUE_CHECK_SCENARIOS: ColleagueCheckScenario[] = [
       },
     ],
   },
+  {
+    id: 'shared-physical-security-colleague-check',
+    challengeId: 'shared-physical-security',
+    title: 'Check in with a colleague',
+    instructions: 'Review how your colleague is handling a work document and decide whether it is safe.',
+    colleagueName: 'Mia',
+    colleagueRole: 'Office colleague',
+    surface: 'teams',
+    dialogueOptions: [],
+    colleagueResponse: "Hey, I've got that document for you. I left it on my desk. Should be easy to find :).",
+    question: 'Is this the correct way to act?',
+    answers: [
+      {
+        text: 'Yes',
+        isCorrect: false,
+        feedback:
+          'This is not a safe way to handle a work document. Important documents should not be left openly on a desk for others to find.',
+      },
+      {
+        text: 'No',
+        isCorrect: true,
+        feedback:
+          'This is not a safe way to handle a work document. Important documents should not be left openly on a desk for others to find.',
+      },
+    ],
+  },
 ];
