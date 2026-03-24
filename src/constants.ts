@@ -120,4 +120,30 @@ export const COLLEAGUE_CHECK_SCENARIOS: ColleagueCheckScenario[] = [
       },
     ],
   },
+  {
+    id: 'shared-devices-colleague-check',
+    challengeId: 'shared-devices',
+    title: 'Check in with a colleague',
+    instructions: 'Review what your colleague is suggesting and decide whether it is safe for a work device.',
+    colleagueName: 'Robin',
+    colleagueRole: 'Colleague',
+    surface: 'teams',
+    dialogueOptions: [],
+    colleagueResponse: "I found this really cool app that turns cat pictures into gifs. You should download it, too.",
+    question: 'Is this the correct way to act?',
+    answers: [
+      {
+        text: 'Yes',
+        isCorrect: false,
+        feedback:
+          'This is not a safe way to act. Only approved apps should be installed on work devices, even if an app seems harmless or fun.',
+      },
+      {
+        text: 'No',
+        isCorrect: true,
+        feedback:
+          'This is not a safe way to act. Only approved apps should be installed on work devices, even if an app seems harmless or fun.',
+      },
+    ],
+  },
 ];

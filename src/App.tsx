@@ -50,7 +50,7 @@ const CONFIDENTIALITY_TARGETS = [
 
 const CONFIDENTIALITY_CHANNELS = [
   { id: 'onedrive', label: 'OneDrive', correctBucket: 'approved' },
-  { id: 'email', label: 'email', correctBucket: 'approved' },
+  { id: 'email', label: 'Email', correctBucket: 'approved' },
   { id: 'teams', label: 'Teams', correctBucket: 'approved' },
   { id: 'sharepoint', label: 'SharePoint', correctBucket: 'approved' },
   { id: 'computer', label: 'My computer', correctBucket: 'not-approved' },
