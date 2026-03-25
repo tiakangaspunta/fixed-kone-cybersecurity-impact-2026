@@ -2214,6 +2214,13 @@ const STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
         body: 'Placeholder: Malware',
         buttonLabel: 'Continue',
       },
+      {
+        id: 'computer-use-using-ai',
+        kind: 'placeholder',
+        title: 'Using AI',
+        body: 'Placeholder: Using AI',
+        buttonLabel: 'Continue',
+      },
     ],
   },
 };
