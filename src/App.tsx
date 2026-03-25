@@ -20,6 +20,9 @@ import {
   Globe,
   FolderLock,
   HardDrive,
+  Mail,
+  FileText,
+  FlaskConical,
 } from 'lucide-react';
 import { Role, Challenge, AppState, ColleagueCheckScenario } from './types';
 import {
@@ -160,7 +163,7 @@ const PHISHING_SCENARIOS: PhishingScenario[] = [
     classificationError:
       'This email is legitimate. The KONE address, normal meeting request, clear signature, and complete footer all support that.',
     clues: [
-      { id: 'sender', label: 'KONE email address', feedback: "The sender's address looks real." },
+      { id: 'sender', label: 'KONE email address', feedback: "The sender has a KONE email address." },
       {
         id: 'request',
         label: 'Normal meeting request',
@@ -349,14 +352,30 @@ const ConfidentialitySimulator = ({
   const [activityStep, setActivityStep] = useState<'labels' | 'channels'>('labels');
   const [labelAssignments, setLabelAssignments] = useState(createEmptyLabelAssignments);
   const [channelAssignments, setChannelAssignments] = useState(createEmptyChannelAssignments);
+  const [activeTargetId, setActiveTargetId] = useState<ConfidentialityTargetId | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [useTapFallback, setUseTapFallback] = useState(false);
   const [missionComplete, setMissionComplete] = useState(false);
   const [successFeedbackText, setSuccessFeedbackText] = useState('');
+
+  useEffect(() => {
+    const updateInteractionMode = () => {
+      setUseTapFallback(window.matchMedia('(max-width: 767px), (pointer: coarse)').matches);
+    };
+
+    updateInteractionMode();
+    window.addEventListener('resize', updateInteractionMode);
+
+    return () => {
+      window.removeEventListener('resize', updateInteractionMode);
+    };
+  }, []);
 
   useEffect(() => {
     setActivityStep('labels');
     setLabelAssignments(createEmptyLabelAssignments());
     setChannelAssignments(createEmptyChannelAssignments());
+    setActiveTargetId(null);
     setDraggingId(null);
     setMissionComplete(false);
     setSuccessFeedbackText('');
@@ -376,17 +395,13 @@ const ConfidentialitySimulator = ({
       next[targetId] = labelId;
       return next;
     });
+    setActiveTargetId(targetId);
     onClearFeedback();
   };
 
-  const returnLabelToBank = (labelId: ConfidentialityLabelId) => {
+  const clearLabelAssignment = (targetId: ConfidentialityTargetId) => {
     setLabelAssignments((prev) => {
-      const next = { ...prev };
-      (Object.keys(next) as ConfidentialityTargetId[]).forEach((key) => {
-        if (next[key] === labelId) {
-          next[key] = null;
-        }
-      });
+      const next = { ...prev, [targetId]: null };
       return next;
     });
     onClearFeedback();
@@ -406,7 +421,7 @@ const ConfidentialitySimulator = ({
     const allPlaced = Object.values(labelAssignments).every(Boolean);
 
     if (!allPlaced) {
-      onAnswer(false, 'Drag all four sensitivity labels into place before you continue.');
+      onAnswer(false, 'Match all four items with a sensitivity label before you continue.');
       return;
     }
 
@@ -444,6 +459,7 @@ const ConfidentialitySimulator = ({
   const resetActiveExercise = () => {
     if (activityStep === 'labels') {
       setLabelAssignments(createEmptyLabelAssignments());
+      setActiveTargetId(null);
     } else {
       setChannelAssignments(createEmptyChannelAssignments());
     }
@@ -458,27 +474,6 @@ const ConfidentialitySimulator = ({
     }
 
     resetActiveExercise();
-  };
-
-  const renderLabelChip = (labelId: ConfidentialityLabelId) => {
-    const labelMeta = findLabelMeta(labelId);
-    if (!labelMeta) return null;
-
-    return (
-      <div
-        draggable
-        onDragStart={(event) => {
-          event.dataTransfer.setData('text/confidentiality-label', labelId);
-          setDraggingId(labelId);
-        }}
-        onDragEnd={() => setDraggingId(null)}
-        className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-bold shadow-sm cursor-grab active:cursor-grabbing ${
-          labelMeta.accent
-        } ${draggingId === labelId ? 'opacity-60' : ''}`}
-      >
-        {labelId}
-      </div>
-    );
   };
 
   const renderChannelChip = (channelId: ConfidentialityChannelId) => {
@@ -505,10 +500,6 @@ const ConfidentialitySimulator = ({
   const allowDrop = (event: React.DragEvent<HTMLElement>) => {
     event.preventDefault();
   };
-
-  const availableLabels = CONFIDENTIALITY_LABELS.filter(
-    (label) => !Object.values(labelAssignments).includes(label.id),
-  );
   const unassignedChannels = CONFIDENTIALITY_CHANNELS.filter((item) => channelAssignments[item.id] === null);
 
   if (step === 'intro') {
@@ -616,32 +607,71 @@ const ConfidentialitySimulator = ({
               <div>
                 <h3 className="text-lg xl:text-xl font-bold text-black">Part 1: Place the correct label</h3>
                 <p className="text-sm xl:text-base text-black/70">
-                  Drag each label to the correct location. Documents use the upper-right corner and email uses the Sensitivity menu.
+                  Match each item with the correct sensitivity label.
                 </p>
               </div>
-              <div
-                onDragOver={allowDrop}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  const labelId = event.dataTransfer.getData('text/confidentiality-label') as ConfidentialityLabelId;
-                  if (!labelId) return;
-                  returnLabelToBank(labelId);
-                  setDraggingId(null);
-                }}
-                className="min-w-[180px] rounded-xl border border-dashed border-black/20 bg-black/[0.03] px-4 py-3 text-sm text-black/60"
-              >
-                Drag here to remove a label
+              <div className="min-w-[220px] rounded-xl border border-dashed border-black/20 bg-black/[0.03] px-4 py-3 text-sm text-black/60">
+                {useTapFallback
+                  ? activeTargetId
+                    ? 'Selected item: tap a label below to assign it.'
+                    : 'Select an item below to start assigning labels.'
+                  : 'Drag a label onto an item box. You can drag again to change your answer.'}
               </div>
             </div>
 
             <div className="rounded-2xl border border-dashed border-black/15 bg-black/[0.02] p-4">
-              <p className="text-xs font-mono tracking-widest text-black/50 mb-3">LABEL BANK</p>
-              <div className="flex flex-wrap gap-3 min-h-11">
-                {availableLabels.length > 0 ? (
-                  availableLabels.map((label) => <div key={label.id}>{renderLabelChip(label.id)}</div>)
-                ) : (
-                  <p className="text-sm text-black/50">All labels are currently placed.</p>
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <p className="text-xs font-mono tracking-widest text-black/50">LABEL PICKER</p>
+                {activeTargetId && labelAssignments[activeTargetId] && (
+                  <button
+                    type="button"
+                    onClick={() => clearLabelAssignment(activeTargetId)}
+                    className="text-xs font-bold text-black/60 hover:text-brand-blue transition-colors"
+                  >
+                    Remove label
+                  </button>
                 )}
+              </div>
+              <div className="flex flex-wrap gap-3 min-h-11">
+                {CONFIDENTIALITY_LABELS.map((label) => {
+                  const isAssignedElsewhere = CONFIDENTIALITY_TARGETS.some(
+                    (target) => target.id !== activeTargetId && labelAssignments[target.id] === label.id,
+                  );
+                  const isSelectedForActive = activeTargetId ? labelAssignments[activeTargetId] === label.id : false;
+
+                  return (
+                    <button
+                      key={label.id}
+                      type="button"
+                      draggable={!useTapFallback}
+                      disabled={useTapFallback && !activeTargetId}
+                      onDragStart={(event) => {
+                        if (useTapFallback) return;
+                        event.dataTransfer.setData('text/confidentiality-label', label.id);
+                        setDraggingId(label.id);
+                      }}
+                      onDragEnd={() => setDraggingId(null)}
+                      onClick={() => useTapFallback && activeTargetId && placeLabel(label.id, activeTargetId)}
+                      className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-bold shadow-sm transition-all ${
+                        label.accent
+                      } ${
+                        useTapFallback && !activeTargetId
+                          ? 'opacity-50 cursor-not-allowed'
+                          : draggingId === label.id
+                            ? 'opacity-60 scale-[1.02]'
+                          : isSelectedForActive
+                            ? 'ring-2 ring-brand-blue/30 scale-[1.02]'
+                            : !useTapFallback
+                              ? 'cursor-grab active:cursor-grabbing hover:scale-[1.02]'
+                              : 'hover:scale-[1.02]'
+                      }`}
+                      aria-pressed={isSelectedForActive}
+                    >
+                      {label.id}
+                      {isAssignedElsewhere ? <span className="ml-2 text-[10px] uppercase tracking-wide opacity-70">In use</span> : null}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -649,153 +679,91 @@ const ConfidentialitySimulator = ({
               {CONFIDENTIALITY_TARGETS.map((target) => {
                 const assignedLabel = labelAssignments[target.id];
                 const assignedMeta = findLabelMeta(assignedLabel);
-                const dropZone = (
+                const isActive = activeTargetId === target.id;
+                const cardClass = `rounded-2xl border bg-white p-5 shadow-sm transition-all ${
+                  isActive
+                    ? 'border-2 border-brand-blue ring-2 ring-brand-blue/15 shadow-brand-blue/10'
+                    : 'border border-black/10 hover:border-brand-blue/40'
+                }`;
+                const labelSlot = (
                   <div
-                    onDragOver={allowDrop}
+                    className={`flex min-h-11 min-w-[120px] items-center justify-center rounded-full border border-dashed px-3 py-2 text-xs font-bold ${
+                      assignedLabel ? 'border-transparent bg-transparent p-0' : 'border-black/20 bg-white/85 text-black/45'
+                    }`}
+                  >
+                    {assignedLabel && assignedMeta ? (
+                      <span className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-bold shadow-sm ${assignedMeta.accent}`}>
+                        {assignedLabel}
+                      </span>
+                    ) : useTapFallback && isActive ? (
+                      'Tap a label below'
+                    ) : (
+                      useTapFallback ? 'Tap to select' : 'Drop label here'
+                    )}
+                  </div>
+                );
+                const Icon =
+                  target.surface === 'website'
+                    ? Globe
+                    : target.surface === 'email'
+                      ? Mail
+                      : target.surface === 'report'
+                        ? FlaskConical
+                        : FileText;
+                const surfaceLabel =
+                  target.surface === 'website'
+                    ? 'Website'
+                    : target.surface === 'email'
+                      ? 'Email'
+                      : target.surface === 'report'
+                        ? 'R&D report'
+                        : 'Document';
+
+                return (
+                  <div
+                    key={target.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setActiveTargetId(target.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setActiveTargetId(target.id);
+                      }
+                    }}
+                    onDragOver={(event) => {
+                      if (!useTapFallback) {
+                        allowDrop(event);
+                      }
+                    }}
                     onDrop={(event) => {
+                      if (useTapFallback) return;
                       event.preventDefault();
                       const labelId = event.dataTransfer.getData('text/confidentiality-label') as ConfidentialityLabelId;
                       if (!labelId) return;
                       placeLabel(labelId, target.id);
                       setDraggingId(null);
                     }}
-                    className={`flex min-h-11 min-w-[120px] items-center justify-center rounded-full border border-dashed px-3 py-2 text-xs font-bold ${
-                      assignedLabel ? 'border-transparent bg-transparent p-0' : 'border-black/20 bg-white/85 text-black/45'
-                    }`}
+                    className={cardClass}
                   >
-                    {assignedLabel && assignedMeta ? renderLabelChip(assignedLabel) : 'Drop label here'}
-                  </div>
-                );
-
-                if (target.surface === 'website') {
-                  return (
-                    <div key={target.id} className="bg-white rounded-2xl border border-black/10 overflow-hidden shadow-sm">
-                      <div className="bg-slate-900 px-4 py-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full bg-white/25" />
-                            <div className="w-2.5 h-2.5 rounded-full bg-white/25" />
-                            <div className="w-2.5 h-2.5 rounded-full bg-white/25" />
-                          </div>
-                          <span className="text-[10px] font-mono tracking-widest text-white/65">kone.com</span>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-blue/10 text-brand-blue grid place-items-center shrink-0">
+                          <Icon className="w-6 h-6" />
                         </div>
-                        {dropZone}
-                      </div>
-                      <div className="p-5 bg-gradient-to-br from-sky-50 via-white to-slate-100 space-y-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2 font-bold text-brand-blue">
-                            <Globe className="w-4 h-4" />
-                            KONE
-                          </div>
-                          <div className="flex gap-4 text-black/55 text-xs font-semibold uppercase tracking-wide">
-                            <span>Products</span>
-                            <span>Services</span>
-                            <span>Support</span>
-                          </div>
-                        </div>
-                        <div className="rounded-2xl border border-sky-100 bg-white/90 p-5 shadow-sm">
-                          <p className="text-xs font-mono tracking-[0.2em] text-brand-blue">CYBERSECURITY</p>
-                          <h4 className="mt-2 text-xl font-black text-black">Cybersecurity in KONE products and services</h4>
-                          <p className="mt-3 text-sm text-black/70">
-                            Learn how KONE builds secure digital experiences and supports customer trust.
+                        <div>
+                          <p className="text-xs font-mono tracking-[0.18em] text-black/45 uppercase">{surfaceLabel}</p>
+                          <h4 className="mt-2 text-lg xl:text-xl font-black text-black">{target.title}</h4>
+                          <p className="mt-2 text-sm text-black/65">
+                            {useTapFallback
+                              ? isActive
+                                ? 'Selected. Tap a label below.'
+                                : 'Tap this item to assign a label.'
+                              : 'Drag the correct sensitivity label here.'}
                           </p>
                         </div>
                       </div>
-                    </div>
-                  );
-                }
-
-                if (target.surface === 'email') {
-                  return (
-                    <div key={target.id} className="bg-white rounded-2xl border border-black/10 overflow-hidden shadow-sm">
-                      <div className="px-4 py-3 border-b border-black/10 bg-slate-50 flex items-center justify-between gap-4">
-                        <div>
-                          <p className="text-xs font-mono tracking-widest text-black/45">EMAIL</p>
-                          <h4 className="text-lg font-bold text-black">{target.title}</h4>
-                        </div>
-                        <div className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2">
-                          <span className="text-xs font-bold text-black/55 uppercase tracking-wide">Sensitivity</span>
-                          {dropZone}
-                        </div>
-                      </div>
-                      <div className="p-5 space-y-4">
-                        <div className="rounded-xl border border-black/10 bg-white">
-                          <div className="px-4 py-3 border-b border-black/10 space-y-2 text-sm">
-                            <div className="flex gap-2">
-                              <span className="w-12 text-black/45 font-mono text-xs">To</span>
-                              <span className="text-black">product.team@kone.com</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <span className="w-12 text-black/45 font-mono text-xs">Cc</span>
-                              <span className="text-black/50">Optional</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <span className="w-12 text-black/45 font-mono text-xs">Subject</span>
-                              <span className="text-black">Customer elevator issue follow-up</span>
-                            </div>
-                          </div>
-                          <div className="p-4 text-sm text-black/70 space-y-3 leading-relaxed">
-                            <p>Hello team,</p>
-                            <p>Please review the latest customer case details before tomorrow&apos;s call.</p>
-                            <p>Best regards,</p>
-                            <p>Project coordinator</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                const isReport = target.surface === 'report';
-                return (
-                  <div
-                    key={target.id}
-                    className={`rounded-2xl border border-[#d7d0c2] bg-[#f7f1e4] p-5 shadow-[0_10px_25px_rgba(0,0,0,0.08)] ${
-                      isReport ? 'rotate-0' : '-rotate-[0.6deg]'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-xs font-mono tracking-[0.18em] text-black/45">{isReport ? 'LAB REPORT' : 'PRINTED DOCUMENT'}</p>
-                        <h4 className="mt-2 text-xl font-black text-black">{target.title}</h4>
-                      </div>
-                      {dropZone}
-                    </div>
-                    <div className="mt-5 space-y-3 text-sm text-black/70">
-                      {isReport ? (
-                        <>
-                          <div className="rounded-xl border border-black/10 bg-white/70 p-3 flex items-center justify-between">
-                            <span className="font-semibold text-black">Brake module stress test</span>
-                            <span className="text-xs font-mono text-black/45">RUN 28A</span>
-                          </div>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="rounded-lg bg-white/70 p-3">
-                              <p className="text-xs font-mono text-black/45">STATUS</p>
-                              <p className="mt-1 font-bold text-black">Pending review</p>
-                            </div>
-                            <div className="rounded-lg bg-white/70 p-3">
-                              <p className="text-xs font-mono text-black/45">SITE</p>
-                              <p className="mt-1 font-bold text-black">Espoo lab</p>
-                            </div>
-                            <div className="rounded-lg bg-white/70 p-3">
-                              <p className="text-xs font-mono text-black/45">RESULT</p>
-                              <p className="mt-1 font-bold text-black">Prototype data</p>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="h-2 rounded-full bg-black/10" />
-                          <div className="h-2 rounded-full bg-black/10 w-11/12" />
-                          <div className="h-2 rounded-full bg-black/10 w-10/12" />
-                          <div className="mt-5 rounded-xl border border-black/10 bg-white/70 p-4">
-                            <p className="font-semibold text-black">Document handling checklist</p>
-                            <p className="mt-2">
-                              Add the correct sensitivity label before sharing information internally.
-                            </p>
-                          </div>
-                        </>
-                      )}
+                      {labelSlot}
                     </div>
                   </div>
                 );
@@ -2142,6 +2110,19 @@ type StandardMissionStep =
       scene: 'badge' | 'desk' | 'gate';
       note: string;
       errorFeedback: string;
+    }
+  | {
+      id: string;
+      kind: 'carousel';
+      title: string;
+      instruction: string;
+      errorFeedback: string;
+      slides: {
+        id: string;
+        title: string;
+        body: string;
+        correctAnswer: 'okay' | 'not-okay';
+      }[];
     };
 
 type StandardMissionConfig = {
@@ -2235,6 +2216,103 @@ const STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
       },
     ],
   },
+};
+
+const FACTORY_STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
+  'shared-devices': {
+    finalFeedback: 'Great job! You protected our devices. Our protection level has increased.',
+    steps: [
+      {
+        id: 'factory-shared-workstations',
+        kind: 'info',
+        title: 'Shared workstations',
+        body: `Factory workstations may use shared credentials for approved operational work. Use them only for work tasks, never for personal activity, and always leave the workstation ready for the next user.
+
+Something visual here or an activity
+
+Do: use the shared workstation only for approved factory tasks
+Do: sign out or return the workstation to a clean state when you are done
+Don't: use shared credentials for personal accounts or personal browsing
+Don't: treat a shared workstation like a personal device`,
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'factory-workstation-history',
+        kind: 'carousel',
+        title: 'Shared workstation history',
+        instruction: 'Review how the shared workstation was used. Mark which use is okay and which is not.',
+        errorFeedback: 'Review the workstation history again. Personal email is not okay on a shared workstation.',
+        slides: [
+          {
+            id: 'training-portal',
+            title: 'Training portal',
+            body: 'A visual here that shows the shared workstation was used to access trainings.',
+            correctAnswer: 'okay',
+          },
+          {
+            id: 'operations-log',
+            title: 'Operations log',
+            body: 'A visual here that shows the shared workstation was used to log information about operations.',
+            correctAnswer: 'okay',
+          },
+          {
+            id: 'personal-email',
+            title: 'Personal email',
+            body: 'A visual here that shows shared workstation was used to access personal email.',
+            correctAnswer: 'not-okay',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const FIELD_STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
+  'shared-devices': {
+    finalFeedback: 'Great job! You protected our devices. Our protection level has increased.',
+    steps: [
+      {
+        id: 'devices-mobile-protection',
+        kind: 'placeholder',
+        title: 'Mobile devices',
+        body: 'Placeholder: Intune, encryption, passcodes/PINs, inactivity timer, regular updates',
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'devices-connections',
+        kind: 'placeholder',
+        title: 'Connections',
+        body: 'Placeholder: Connections to wifi and VPN',
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'devices-lost-device',
+        kind: 'placeholder',
+        title: 'Lost device response',
+        body: 'Placeholder: What to do if you lose your mobile device',
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'devices-field-mobility-tool',
+        kind: 'placeholder',
+        title: 'Field Mobility Tool',
+        body: 'Placeholder: Field Mobility Tool',
+        buttonLabel: 'Continue',
+      },
+    ],
+  },
+};
+
+const getStandardMissionConfig = (challengeId: string, role: Role): StandardMissionConfig | undefined => {
+  if (role === 'factory' && FACTORY_STANDARD_MISSION_CONFIGS[challengeId]) {
+    return FACTORY_STANDARD_MISSION_CONFIGS[challengeId];
+  }
+
+  if (role === 'field' && FIELD_STANDARD_MISSION_CONFIGS[challengeId]) {
+    return FIELD_STANDARD_MISSION_CONFIGS[challengeId];
+  }
+
+  return STANDARD_MISSION_CONFIGS[challengeId];
 };
 
 const renderPhysicalSecurityScene = ({
@@ -2364,6 +2442,7 @@ const renderPhysicalSecurityScene = ({
 
 const StandardChallengeSimulator = ({
   challenge,
+  role,
   step,
   onSetStep,
   onAnswer,
@@ -2374,6 +2453,7 @@ const StandardChallengeSimulator = ({
   onContinue,
 }: {
   challenge: Challenge;
+  role: Role;
   step: 'intro' | 'mission' | 'activity';
   onSetStep: (step: 'intro' | 'mission' | 'activity') => void;
   onAnswer: (isCorrect: boolean, feedback: string) => void;
@@ -2386,12 +2466,16 @@ const StandardChallengeSimulator = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [missionComplete, setMissionComplete] = useState(false);
   const [successFeedbackText, setSuccessFeedbackText] = useState('');
-  const missionConfig = STANDARD_MISSION_CONFIGS[challenge.id];
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  const [carouselAnswers, setCarouselAnswers] = useState<Record<string, 'okay' | 'not-okay' | null>>({});
+  const missionConfig = getStandardMissionConfig(challenge.id, role);
 
   useEffect(() => {
     setCurrentStepIndex(0);
     setMissionComplete(false);
     setSuccessFeedbackText('');
+    setCurrentCarouselIndex(0);
+    setCarouselAnswers({});
   }, [challenge.id]);
 
   const missionSteps: StandardMissionStep[] =
@@ -2408,6 +2492,22 @@ const StandardChallengeSimulator = ({
   const currentStep = missionSteps[currentStepIndex];
   const finalFeedbackText = missionConfig?.finalFeedback;
 
+  useEffect(() => {
+    if (currentStep.kind === 'carousel') {
+      setCurrentCarouselIndex(0);
+      setCarouselAnswers(
+        currentStep.slides.reduce<Record<string, 'okay' | 'not-okay' | null>>((acc, slide) => {
+          acc[slide.id] = null;
+          return acc;
+        }, {}),
+      );
+      return;
+    }
+
+    setCurrentCarouselIndex(0);
+    setCarouselAnswers({});
+  }, [currentStepIndex, currentStep.kind]);
+
   const advanceOrComplete = (completionFeedback?: string) => {
     if (currentStepIndex === missionSteps.length - 1) {
       onClearFeedback();
@@ -2417,6 +2517,8 @@ const StandardChallengeSimulator = ({
     }
 
     setCurrentStepIndex((prev) => prev + 1);
+    setCurrentCarouselIndex(0);
+    setCarouselAnswers({});
     onClearFeedback();
   };
 
@@ -2439,6 +2541,34 @@ const StandardChallengeSimulator = ({
   const handleHotspotSelect = (isCorrect: boolean) => {
     if (feedback || currentStep.kind !== 'hotspot') return;
 
+    if (!isCorrect) {
+      onAnswer(false, currentStep.errorFeedback);
+      return;
+    }
+
+    advanceOrComplete();
+  };
+
+  const handleCarouselAnswer = (answer: 'okay' | 'not-okay') => {
+    if (feedback || currentStep.kind !== 'carousel') return;
+
+    const slide = currentStep.slides[currentCarouselIndex];
+    if (!slide) return;
+
+    setCarouselAnswers((prev) => ({ ...prev, [slide.id]: answer }));
+    onClearFeedback();
+  };
+
+  const handleCarouselSubmit = () => {
+    if (currentStep.kind !== 'carousel') return;
+
+    const allAnswered = currentStep.slides.every((slide) => carouselAnswers[slide.id]);
+    if (!allAnswered) {
+      onAnswer(false, 'Review all three workstation history views before checking your answer.');
+      return;
+    }
+
+    const isCorrect = currentStep.slides.every((slide) => carouselAnswers[slide.id] === slide.correctAnswer);
     if (!isCorrect) {
       onAnswer(false, currentStep.errorFeedback);
       return;
@@ -2592,7 +2722,7 @@ const StandardChallengeSimulator = ({
                   : 'border-brand-blue/20 bg-brand-blue/5'
               }`}
             >
-              <p className="body-copy text-black/80">{currentStep.body}</p>
+              <p className="body-copy text-black/80 whitespace-pre-line">{currentStep.body}</p>
             </div>
             <div className="flex justify-center">
               <button
@@ -2602,6 +2732,100 @@ const StandardChallengeSimulator = ({
               >
                 {currentStep.buttonLabel ?? 'Continue'}
               </button>
+            </div>
+          </div>
+        </div>
+      ) : currentStep.kind === 'carousel' ? (
+        <div className="space-y-4 xl:space-y-6">
+          <div className="bg-brand-blue/5 rounded-xl border border-brand-blue/15 p-5 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-lg xl:text-xl font-bold text-black">{currentStep.title}</h3>
+              <p className="text-xs font-mono text-brand-blue">
+                {currentCarouselIndex + 1} / {currentStep.slides.length}
+              </p>
+            </div>
+            <p className="text-sm xl:text-base text-black/75">{currentStep.instruction}</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden">
+            <div className="px-6 py-5 xl:px-8 xl:py-6 border-b border-black/10 bg-black text-white">
+              <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">WORKSTATION HISTORY</p>
+              <h3 className="mt-2 text-2xl xl:text-3xl font-bold">{currentStep.slides[currentCarouselIndex].title}</h3>
+            </div>
+
+            <div className="p-6 xl:p-8 space-y-6">
+              <div className="rounded-xl border border-black/10 bg-black/[0.02] p-5 space-y-4">
+                <div className="flex items-center justify-between gap-3 text-xs font-mono tracking-widest text-black/50">
+                  <span>SHARED WORKSTATION</span>
+                  <span>VIEW {currentCarouselIndex + 1}</span>
+                </div>
+                <p className="text-lg xl:text-xl text-black/80 leading-relaxed">
+                  {currentStep.slides[currentCarouselIndex].body}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  { id: 'okay' as const, label: 'Okay to do' },
+                  { id: 'not-okay' as const, label: 'Not okay' },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={!!feedback}
+                    onClick={() => handleCarouselAnswer(option.id)}
+                    className={`w-full p-4 xl:p-5 rounded-xl border text-left text-sm xl:text-base transition-all ${
+                      carouselAnswers[currentStep.slides[currentCarouselIndex].id] === option.id
+                        ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                        : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  disabled={currentCarouselIndex === 0}
+                  onClick={() => setCurrentCarouselIndex((prev) => Math.max(prev - 1, 0))}
+                  className="px-5 py-3 rounded-lg border border-black/15 text-black text-sm xl:text-base font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-brand-blue/5 transition-colors"
+                >
+                  Previous
+                </button>
+                <div className="flex gap-2">
+                  {currentStep.slides.map((slide, index) => (
+                    <div
+                      key={slide.id}
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        index === currentCarouselIndex ? 'bg-brand-blue' : carouselAnswers[slide.id] ? 'bg-brand-blue/40' : 'bg-black/15'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={currentCarouselIndex === currentStep.slides.length - 1}
+                  onClick={() =>
+                    setCurrentCarouselIndex((prev) => Math.min(prev + 1, currentStep.slides.length - 1))
+                  }
+                  className="px-5 py-3 rounded-lg border border-black/15 text-black text-sm xl:text-base font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-brand-blue/5 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  disabled={!!feedback}
+                  onClick={handleCarouselSubmit}
+                  className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+                >
+                  Check workstation history
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2707,10 +2931,17 @@ export default function App() {
     ...otherRoleChallenges,
     ...(computerUseChallenge ? [computerUseChallenge] : []),
   ];
-  const availableColleagueScenarios = COLLEAGUE_CHECK_SCENARIOS.filter((scenario) =>
-    allChallenges.some((challenge) => challenge.id === scenario.challengeId),
+  const availableColleagueScenarios =
+    role === 'factory'
+      ? []
+      : COLLEAGUE_CHECK_SCENARIOS.filter((scenario) =>
+          allChallenges.some((challenge) => challenge.id === scenario.challengeId),
+        );
+  const availableColleagueScenarioIds = availableColleagueScenarios.map((scenario) => scenario.id);
+  const completedAvailableColleagueScenarioIds = completedColleagueScenarioIds.filter((id) =>
+    availableColleagueScenarioIds.includes(id),
   );
-  const totalProgressCount = completedIds.length + completedColleagueScenarioIds.length;
+  const totalProgressCount = completedIds.length + completedAvailableColleagueScenarioIds.length;
   const totalProgressMax = allChallenges.length + availableColleagueScenarios.length;
 
   const navigateTo = (nextView: AppState) => {
@@ -2788,7 +3019,7 @@ export default function App() {
     setCompletedIds(nextCompletedIds);
     resetChallengeSession();
 
-    const nextProgressCount = nextCompletedIds.length + completedColleagueScenarioIds.length;
+    const nextProgressCount = nextCompletedIds.length + completedAvailableColleagueScenarioIds.length;
     if (nextProgressCount === totalProgressMax) {
       navigateTo('victory');
     } else {
@@ -2999,7 +3230,7 @@ export default function App() {
           const isCompleted = completedIds.includes(c.id);
           const isCurrentMission = !isCompleted && i === completedIds.length;
           const looksLocked = !isCompleted && i > completedIds.length;
-          const colleagueScenario = COLLEAGUE_CHECK_SCENARIOS.find((scenario) => scenario.challengeId === c.id);
+          const colleagueScenario = availableColleagueScenarios.find((scenario) => scenario.challengeId === c.id);
           const isColleagueScenarioCompleted = colleagueScenario
             ? completedColleagueScenarioIds.includes(colleagueScenario.id)
             : false;
@@ -3121,6 +3352,7 @@ export default function App() {
         ) : (
           <StandardChallengeSimulator
             challenge={activeChallenge}
+            role={role}
             step={standardMissionStep}
             onSetStep={setStandardMissionStep}
             onAnswer={handleAnswer}
