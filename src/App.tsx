@@ -45,10 +45,34 @@ const CONFIDENTIALITY_LABELS = [
 ] as const;
 
 const CONFIDENTIALITY_TARGETS = [
-  { id: 'website', correctLabel: 'Public', title: 'Cybersecurity in KONE products and services website', surface: 'website' },
-  { id: 'instructions', correctLabel: 'Internal', title: 'Document classification instructions', surface: 'document' },
-  { id: 'email', correctLabel: 'Confidential', title: 'Email', surface: 'email' },
-  { id: 'rnd-results', correctLabel: 'Secret', title: 'R&D testing results', surface: 'report' },
+  {
+    id: 'website',
+    correctLabel: 'Public',
+    title: 'Cybersecurity in KONE products and services website',
+    surface: 'website',
+    feedback: 'Information intended for the public has no restrictions.',
+  },
+  {
+    id: 'instructions',
+    correctLabel: 'Internal',
+    title: 'Document classification instructions',
+    surface: 'document',
+    feedback: 'Our internal instructions, for example, are only for us at KONE.',
+  },
+  {
+    id: 'email',
+    correctLabel: 'Confidential',
+    title: 'Email',
+    surface: 'email',
+    feedback: 'Confidential information should stay with the specific people and roles who need it for their work.',
+  },
+  {
+    id: 'rnd-results',
+    correctLabel: 'Secret',
+    title: 'R&D testing results',
+    surface: 'report',
+    feedback: 'R&D documents contain secret information about our innovations. Secret information is meant only for specific individuals and not everyone at KONE.',
+  },
 ] as const;
 
 const CONFIDENTIALITY_CHANNELS = [
@@ -60,9 +84,124 @@ const CONFIDENTIALITY_CHANNELS = [
   { id: 'personal-email', label: 'My personal email', correctBucket: 'not-approved' },
 ] as const;
 
+const CONFIDENTIALITY_OVERVIEW_ITEMS = [
+  {
+    id: 'Public',
+    description: 'Information intended for the public, such as approved external website or communication content.',
+    dangerText: "This information being public doesn't cause any harm.",
+    meterWidth: '15%',
+    meterTone: 'bg-emerald-500',
+  },
+  {
+    id: 'Internal',
+    description:
+      'Information of general internal business nature typically produced in day-to-day business operations. Intended for KONE internal use only.',
+    dangerText: 'This information being public would not cause major harm.',
+    meterWidth: '35%',
+    meterTone: 'bg-amber-500',
+  },
+  {
+    id: 'Confidential',
+    description: 'Information of a more restrictive nature often related and limited to specific roles within KONE.',
+    dangerText:
+      'This information leaking could lead to important information about our operations or people ending up in the wrong hands or disrupting our operations.',
+    meterWidth: '70%',
+    meterTone: 'bg-orange-500',
+  },
+  {
+    id: 'Secret',
+    description:
+      'Insider information, business-critical information, privileged or confidential legal communications, and other information of highly sensitive and restrictive nature.',
+    dangerText: 'This information leaking could cause significant harm.',
+    meterWidth: '100%',
+    meterTone: 'bg-rose-600',
+  },
+] as const;
+
+const CONFIDENTIALITY_HANDLING_METHODS = [
+  {
+    id: 'share-links',
+    label: 'Share links to files stored in OneDrive for Business, Teams or SharePoint',
+  },
+  {
+    id: 'password-attachments',
+    label: 'Attachments must have passwords',
+  },
+  {
+    id: 'no-personal-storage',
+    label: 'Never store to a personal memory device or cloud service (including emails or personal OneDrive)',
+  },
+  {
+    id: 'remove-from-device',
+    label: 'Do not store locally on your computer',
+  },
+  {
+    id: 'no-yammer',
+    label: 'Do not discuss in Yammer',
+  },
+  {
+    id: 'limited-teams-groups',
+    label: 'In Teams, only handle within groups that have limited and well monitored access',
+  },
+  {
+    id: 'unique-teams-meetings',
+    label: 'Use only Teams with unique meeting invitations, restrict and monitor who is on the call',
+  },
+  {
+    id: 'internal-links-primary',
+    label: 'Primarily share links to files stored in OneDrive for Business, Teams or SharePoint, but attachments are allowed',
+  },
+
+  {
+    id: 'no-limitations',
+    label: 'No limitations',
+  },
+] as const;
+
+const CONFIDENTIALITY_HANDLING_CATEGORIES = [
+  {
+    id: 'Public',
+    intro: 'Select the handling method that fits public information.',
+    correctMethodIds: ['no-limitations'],
+  },
+  {
+    id: 'Internal',
+    intro: 'Select all handling methods that fit internal information.',
+    correctMethodIds: ['internal-links-primary', 'no-personal-storage'],
+  },
+  {
+    id: 'Confidential',
+    intro: 'Select all handling methods that fit confidential information.',
+    correctMethodIds: [
+      'share-links',
+      'password-attachments',
+      'no-personal-storage',
+      'remove-from-device',
+      'no-yammer',
+      'limited-teams-groups',
+      'unique-teams-meetings',
+    ],
+  },
+  {
+    id: 'Secret',
+    intro: 'Select all handling methods that fit secret information.',
+    correctMethodIds: [
+      'share-links',
+      'password-attachments',
+      'no-personal-storage',
+      'remove-from-device',
+      'no-yammer',
+      'limited-teams-groups',
+      'unique-teams-meetings',
+    ],
+  },
+] as const;
+
 type ConfidentialityLabelId = (typeof CONFIDENTIALITY_LABELS)[number]['id'];
 type ConfidentialityTargetId = (typeof CONFIDENTIALITY_TARGETS)[number]['id'];
 type ConfidentialityChannelId = (typeof CONFIDENTIALITY_CHANNELS)[number]['id'];
+type ConfidentialityHandlingMethodId = (typeof CONFIDENTIALITY_HANDLING_METHODS)[number]['id'];
+type ConfidentialityHandlingCategoryId = (typeof CONFIDENTIALITY_HANDLING_CATEGORIES)[number]['id'];
 type ConfidentialityBucketId = 'approved' | 'not-approved';
 
 const createEmptyLabelAssignments = (): Record<ConfidentialityTargetId, ConfidentialityLabelId | null> => ({
@@ -93,6 +232,23 @@ type PhishingScenario = {
   clueInstruction: string;
   classificationError: string;
   clues: { id: string; label: string; feedback: string }[];
+};
+
+type FinalQuizQuestion = {
+  id: string;
+  prompt: string;
+  options: {
+    id: string;
+    text: string;
+    isCorrect: boolean;
+    feedback: string;
+  }[];
+};
+
+type FinalQuizResult = {
+  passed: boolean;
+  correctCount: number;
+  total: number;
 };
 const PHISHING_PROMPT_LABEL = 'Is this legitimate or fake?';
 const PHISHING_SCENARIOS: PhishingScenario[] = [
@@ -337,6 +493,7 @@ const ConfidentialitySimulator = ({
   maxLevel,
   onContinue,
   resetKey,
+  onCheckpointResult,
 }: {
   challenge: Challenge;
   step: 'intro' | 'mission' | 'activity';
@@ -348,15 +505,27 @@ const ConfidentialitySimulator = ({
   maxLevel: number;
   onContinue: () => void;
   resetKey: string;
+  onCheckpointResult: (checkpointId: string, isCorrect: boolean) => void;
 }) => {
-  const [activityStep, setActivityStep] = useState<'labels' | 'channels'>('labels');
+  const [activityStep, setActivityStep] = useState<'overview' | 'labels' | 'channels' | 'handling'>('overview');
   const [labelAssignments, setLabelAssignments] = useState(createEmptyLabelAssignments);
   const [channelAssignments, setChannelAssignments] = useState(createEmptyChannelAssignments);
+  const [handlingSelections, setHandlingSelections] = useState<
+    Record<ConfidentialityHandlingCategoryId, ConfidentialityHandlingMethodId[]>
+  >({
+    Public: [],
+    Internal: [],
+    Confidential: [],
+    Secret: [],
+  });
   const [activeTargetId, setActiveTargetId] = useState<ConfidentialityTargetId | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [useTapFallback, setUseTapFallback] = useState(false);
   const [missionComplete, setMissionComplete] = useState(false);
   const [successFeedbackText, setSuccessFeedbackText] = useState('');
+  const [showLabelFeedback, setShowLabelFeedback] = useState(false);
+  const [handlingIndex, setHandlingIndex] = useState(0);
+  const [hasLeftOverview, setHasLeftOverview] = useState(false);
 
   useEffect(() => {
     const updateInteractionMode = () => {
@@ -372,14 +541,32 @@ const ConfidentialitySimulator = ({
   }, []);
 
   useEffect(() => {
-    setActivityStep('labels');
+    setActivityStep('overview');
     setLabelAssignments(createEmptyLabelAssignments());
     setChannelAssignments(createEmptyChannelAssignments());
+    setHandlingSelections({
+      Public: [],
+      Internal: [],
+      Confidential: [],
+      Secret: [],
+    });
     setActiveTargetId(null);
     setDraggingId(null);
     setMissionComplete(false);
     setSuccessFeedbackText('');
+    setShowLabelFeedback(false);
+    setHandlingIndex(0);
+    setHasLeftOverview(false);
   }, [resetKey]);
+
+  useEffect(() => {
+    if (step === 'activity' && activityStep === 'overview' && hasLeftOverview) {
+      setActivityStep('labels');
+    }
+  }, [activityStep, hasLeftOverview, step]);
+
+  const currentHandlingCategory = CONFIDENTIALITY_HANDLING_CATEGORIES[handlingIndex];
+  const currentHandlingSelection = handlingSelections[currentHandlingCategory.id];
 
   const findLabelMeta = (labelId: ConfidentialityLabelId | null) =>
     CONFIDENTIALITY_LABELS.find((label) => label.id === labelId) ?? null;
@@ -417,6 +604,19 @@ const ConfidentialitySimulator = ({
     onClearFeedback();
   };
 
+  const toggleHandlingMethod = (methodId: ConfidentialityHandlingMethodId) => {
+    setHandlingSelections((prev) => {
+      const current = prev[currentHandlingCategory.id];
+      return {
+        ...prev,
+        [currentHandlingCategory.id]: current.includes(methodId)
+          ? current.filter((id) => id !== methodId)
+          : [...current, methodId],
+      };
+    });
+    onClearFeedback();
+  };
+
   const handleLabelSubmit = () => {
     const allPlaced = Object.values(labelAssignments).every(Boolean);
 
@@ -427,11 +627,13 @@ const ConfidentialitySimulator = ({
 
     const isCorrect = CONFIDENTIALITY_TARGETS.every((target) => labelAssignments[target.id] === target.correctLabel);
     if (!isCorrect) {
+      onCheckpointResult(`challenge:${challenge.id}:labels`, false);
       onAnswer(false, 'Not quite. Review the KONE sensitivity labels and try placing them again.');
       return;
     }
 
-    setActivityStep('channels');
+    onCheckpointResult(`challenge:${challenge.id}:labels`, true);
+    setShowLabelFeedback(true);
     onClearFeedback();
   };
 
@@ -445,23 +647,56 @@ const ConfidentialitySimulator = ({
 
     const isCorrect = CONFIDENTIALITY_CHANNELS.every((item) => channelAssignments[item.id] === item.correctBucket);
     if (!isCorrect) {
+      onCheckpointResult(`challenge:${challenge.id}:channels`, false);
       onAnswer(false, 'Some options are still in the wrong place. Use only approved channels and storage locations.');
       return;
     }
 
+    onCheckpointResult(`challenge:${challenge.id}:channels`, true);
+    setActivityStep('handling');
     onClearFeedback();
-    setSuccessFeedbackText(
-      "That's right! You stopped important information from ending up in the criminals' hands. Our protection level has increased.",
-    );
-    setMissionComplete(true);
+  };
+
+  const handleHandlingSubmit = () => {
+    if (currentHandlingSelection.length === 0) {
+      onAnswer(false, 'Select the handling methods that fit this category before checking your answer.');
+      return;
+    }
+
+    const expectedIds = [...currentHandlingCategory.correctMethodIds].sort();
+    const selectedIds = [...currentHandlingSelection].sort();
+    const isCorrect =
+      expectedIds.length === selectedIds.length && expectedIds.every((methodId, index) => methodId === selectedIds[index]);
+
+    if (!isCorrect) {
+      onCheckpointResult(`challenge:${challenge.id}:handling`, false);
+      onAnswer(false, `Not quite. Review which handling methods belong to ${currentHandlingCategory.id} information and try again.`);
+      return;
+    }
+
+    if (handlingIndex === CONFIDENTIALITY_HANDLING_CATEGORIES.length - 1) {
+      onCheckpointResult(`challenge:${challenge.id}:handling`, true);
+      onClearFeedback();
+      setSuccessFeedbackText(
+        "That's right! You stopped important information from ending up in the criminals' hands. Our protection level has increased.",
+      );
+      setMissionComplete(true);
+      return;
+    }
+
+    setHandlingIndex((prev) => prev + 1);
+    onClearFeedback();
   };
 
   const resetActiveExercise = () => {
     if (activityStep === 'labels') {
       setLabelAssignments(createEmptyLabelAssignments());
       setActiveTargetId(null);
-    } else {
+      setShowLabelFeedback(false);
+    } else if (activityStep === 'channels') {
       setChannelAssignments(createEmptyChannelAssignments());
+    } else if (activityStep === 'handling') {
+      setHandlingSelections((prev) => ({ ...prev, [currentHandlingCategory.id]: [] }));
     }
     setDraggingId(null);
     onClearFeedback();
@@ -564,6 +799,7 @@ const ConfidentialitySimulator = ({
                 Prepare defenses
               </button>
             </div>
+
           </div>
         </div>
       </div>
@@ -584,24 +820,58 @@ const ConfidentialitySimulator = ({
 
   return (
     <div className="space-y-6">
-      {activityStep === 'labels' ? (
-        <div className="space-y-4 xl:space-y-6">
-          <div className="bg-brand-blue/5 rounded-xl border border-brand-blue/15 p-5 space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm xl:text-base font-bold text-black">Sensitivity labels</p>
-              <p className="body-copy text-black/75">
+      {activityStep === 'overview' ? (
+        <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden">
+          <div className="px-6 py-5 xl:px-8 xl:py-6 border-b border-black/10 bg-black text-white">
+            <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">CONFIDENTIALITY MISSION</p>
+            <h3 className="mt-2 text-2xl xl:text-3xl font-bold">Understanding KONE sensitivity labels</h3>
+          </div>
+
+          <div className="p-6 xl:p-8 space-y-6">
+            <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-5">
+              <p className="body-copy text-black/80">
                 Classifying your work with the KONE sensitivity labels informs people on how confidential it is.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {CONFIDENTIALITY_LABELS.map((label) => (
-                <span key={label.id} className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${label.accent}`}>
-                  {label.id}
-                </span>
-              ))}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:gap-5">
+              {CONFIDENTIALITY_OVERVIEW_ITEMS.map((item) => {
+                const labelMeta = CONFIDENTIALITY_LABELS.find((label) => label.id === item.id);
+
+                return (
+                  <div key={item.id} className="rounded-2xl border border-black/10 bg-white p-5 xl:p-6 space-y-4">
+                    <span className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${labelMeta?.accent ?? ''}`}>
+                      {item.id}
+                    </span>
+                    <p className="text-sm xl:text-base text-black/75">{item.description}</p>
+                    <div className="rounded-xl border border-black/10 bg-black/[0.02] p-4 space-y-3">
+                      <p className="text-xs font-mono tracking-widest text-black/45">DANGER METER</p>
+                      <div className="h-2.5 rounded-full bg-black/10 overflow-hidden border border-black/10">
+                        <div className={`h-full ${item.meterTone}`} style={{ width: item.meterWidth }} />
+                      </div>
+                      <p className="text-sm text-black/70">{item.dangerText}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setHasLeftOverview(true);
+                  setActivityStep('labels');
+                }}
+                className="action-button bg-brand-blue hover:opacity-90 text-white rounded-full transform hover:scale-105 shadow-lg shadow-brand-blue/10"
+              >
+                Continue to exercise
+              </button>
             </div>
           </div>
-
+        </div>
+      ) : activityStep === 'labels' ? (
+        <div className="space-y-4 xl:space-y-6">
           <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 p-5 xl:p-6 space-y-4">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
@@ -611,11 +881,13 @@ const ConfidentialitySimulator = ({
                 </p>
               </div>
               <div className="min-w-[220px] rounded-xl border border-dashed border-black/20 bg-black/[0.03] px-4 py-3 text-sm text-black/60">
-                {useTapFallback
-                  ? activeTargetId
-                    ? 'Selected item: tap a label below to assign it.'
-                    : 'Select an item below to start assigning labels.'
-                  : 'Drag a label onto an item box. You can drag again to change your answer.'}
+                {showLabelFeedback
+                  ? 'Review the feedback shown next to each topic.'
+                  : useTapFallback
+                    ? activeTargetId
+                      ? 'Selected item: tap a label below to assign it.'
+                      : 'Select an item below to start assigning labels.'
+                    : 'Drag a label onto an item box. You can drag again to change your answer.'}
               </div>
             </div>
 
@@ -625,6 +897,7 @@ const ConfidentialitySimulator = ({
                 {activeTargetId && labelAssignments[activeTargetId] && (
                   <button
                     type="button"
+                    disabled={showLabelFeedback}
                     onClick={() => clearLabelAssignment(activeTargetId)}
                     className="text-xs font-bold text-black/60 hover:text-brand-blue transition-colors"
                   >
@@ -643,15 +916,15 @@ const ConfidentialitySimulator = ({
                     <button
                       key={label.id}
                       type="button"
-                      draggable={!useTapFallback}
-                      disabled={useTapFallback && !activeTargetId}
+                      draggable={!useTapFallback && !showLabelFeedback}
+                      disabled={(useTapFallback && !activeTargetId) || showLabelFeedback}
                       onDragStart={(event) => {
-                        if (useTapFallback) return;
+                        if (useTapFallback || showLabelFeedback) return;
                         event.dataTransfer.setData('text/confidentiality-label', label.id);
                         setDraggingId(label.id);
                       }}
                       onDragEnd={() => setDraggingId(null)}
-                      onClick={() => useTapFallback && activeTargetId && placeLabel(label.id, activeTargetId)}
+                      onClick={() => useTapFallback && activeTargetId && !showLabelFeedback && placeLabel(label.id, activeTargetId)}
                       className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-bold shadow-sm transition-all ${
                         label.accent
                       } ${
@@ -675,11 +948,12 @@ const ConfidentialitySimulator = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-5">
+            <div className={showLabelFeedback ? 'grid grid-cols-1 gap-4 xl:gap-5' : 'grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-5'}>
               {CONFIDENTIALITY_TARGETS.map((target) => {
                 const assignedLabel = labelAssignments[target.id];
                 const assignedMeta = findLabelMeta(assignedLabel);
                 const isActive = activeTargetId === target.id;
+                const isCorrectAssignment = assignedLabel === target.correctLabel;
                 const cardClass = `rounded-2xl border bg-white p-5 shadow-sm transition-all ${
                   isActive
                     ? 'border-2 border-brand-blue ring-2 ring-brand-blue/15 shadow-brand-blue/10'
@@ -722,64 +996,89 @@ const ConfidentialitySimulator = ({
                 return (
                   <div
                     key={target.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setActiveTargetId(target.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        setActiveTargetId(target.id);
-                      }
-                    }}
-                    onDragOver={(event) => {
-                      if (!useTapFallback) {
-                        allowDrop(event);
-                      }
-                    }}
-                    onDrop={(event) => {
-                      if (useTapFallback) return;
-                      event.preventDefault();
-                      const labelId = event.dataTransfer.getData('text/confidentiality-label') as ConfidentialityLabelId;
-                      if (!labelId) return;
-                      placeLabel(labelId, target.id);
-                      setDraggingId(null);
-                    }}
-                    className={cardClass}
+                    className={showLabelFeedback ? 'grid gap-3 md:grid-cols-[minmax(0,1fr)_260px] md:items-start' : ''}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-brand-blue/10 text-brand-blue grid place-items-center shrink-0">
-                          <Icon className="w-6 h-6" />
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => !showLabelFeedback && setActiveTargetId(target.id)}
+                      onKeyDown={(event) => {
+                        if ((event.key === 'Enter' || event.key === ' ') && !showLabelFeedback) {
+                          event.preventDefault();
+                          setActiveTargetId(target.id);
+                        }
+                      }}
+                      onDragOver={(event) => {
+                        if (!useTapFallback && !showLabelFeedback) {
+                          allowDrop(event);
+                        }
+                      }}
+                      onDrop={(event) => {
+                        if (useTapFallback || showLabelFeedback) return;
+                        event.preventDefault();
+                        const labelId = event.dataTransfer.getData('text/confidentiality-label') as ConfidentialityLabelId;
+                        if (!labelId) return;
+                        placeLabel(labelId, target.id);
+                        setDraggingId(null);
+                      }}
+                      className={cardClass}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-brand-blue/10 text-brand-blue grid place-items-center shrink-0">
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-mono tracking-[0.18em] text-black/45 uppercase">{surfaceLabel}</p>
+                            <h4 className="mt-2 text-lg xl:text-xl font-black text-black">{target.title}</h4>
+                            <p className="mt-2 text-sm text-black/65">
+                              {showLabelFeedback
+                                ? 'Review the explanation next to this topic.'
+                                : useTapFallback
+                                  ? isActive
+                                    ? 'Selected. Tap a label below.'
+                                    : 'Tap this item to assign a label.'
+                                  : 'Drag the correct sensitivity label here.'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-mono tracking-[0.18em] text-black/45 uppercase">{surfaceLabel}</p>
-                          <h4 className="mt-2 text-lg xl:text-xl font-black text-black">{target.title}</h4>
-                          <p className="mt-2 text-sm text-black/65">
-                            {useTapFallback
-                              ? isActive
-                                ? 'Selected. Tap a label below.'
-                                : 'Tap this item to assign a label.'
-                              : 'Drag the correct sensitivity label here.'}
-                          </p>
-                        </div>
+                        {labelSlot}
                       </div>
-                      {labelSlot}
                     </div>
+
+                    {showLabelFeedback && isCorrectAssignment && (
+                      <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 text-sm text-black/75">
+                        {target.feedback}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={handleLabelSubmit}
-              className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
-            >
-              Check labels
-            </button>
+            {showLabelFeedback ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLabelFeedback(false);
+                  setActivityStep('channels');
+                }}
+                className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+              >
+                Continue
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLabelSubmit}
+                className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+              >
+                Check labels
+              </button>
+            )}
           </div>
         </div>
-      ) : (
+      ) : activityStep === 'channels' ? (
         <div className="space-y-4 xl:space-y-6">
           <div className="bg-brand-blue/5 rounded-xl border border-brand-blue/15 p-5 space-y-3">
             <h3 className="text-sm xl:text-base font-bold text-black">Part 2: Approved places to work with information</h3>
@@ -872,6 +1171,62 @@ const ConfidentialitySimulator = ({
             </button>
           </div>
         </div>
+      ) : (
+        <div className="space-y-4 xl:space-y-6">
+          <div className="bg-brand-blue/5 rounded-xl border border-brand-blue/15 p-5 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm xl:text-base font-bold text-black">Part 3: Match handling methods to the information category</h3>
+              <p className="text-xs font-mono text-brand-blue">
+                {handlingIndex + 1} / {CONFIDENTIALITY_HANDLING_CATEGORIES.length}
+              </p>
+            </div>
+            <p className="body-copy text-black/75">{currentHandlingCategory.intro}</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 p-5 xl:p-6 space-y-5">
+            <div className="flex flex-wrap gap-2">
+              {CONFIDENTIALITY_LABELS.map((label) => (
+                <span
+                  key={label.id}
+                  className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${label.accent} ${
+                    label.id === currentHandlingCategory.id ? 'ring-2 ring-brand-blue/20' : 'opacity-50'
+                  }`}
+                >
+                  {label.id}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {CONFIDENTIALITY_HANDLING_METHODS.map((method) => {
+                const isSelected = currentHandlingSelection.includes(method.id);
+
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => toggleHandlingMethod(method.id)}
+                    className={`w-full p-4 xl:p-5 rounded-xl border text-left text-sm xl:text-base transition-all ${
+                      isSelected
+                        ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                        : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
+                    }`}
+                  >
+                    {method.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleHandlingSubmit}
+              className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+            >
+              {handlingIndex === CONFIDENTIALITY_HANDLING_CATEGORIES.length - 1 ? 'Finish confidentiality mission' : 'Check category'}
+            </button>
+          </div>
+        </div>
       )}
 
       <AnimatePresence>
@@ -916,6 +1271,7 @@ const PhishingSimulator = ({
   currentLevel,
   maxLevel,
   onContinue,
+  onCheckpointResult,
 }: {
   challenge: Challenge;
   step: 'intro' | 'mission' | 'activity';
@@ -926,6 +1282,7 @@ const PhishingSimulator = ({
   currentLevel: number;
   maxLevel: number;
   onContinue: () => void;
+  onCheckpointResult: (checkpointId: string, isCorrect: boolean) => void;
 }) => {
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [classification, setClassification] = useState<MessageClassification | null>(null);
@@ -976,6 +1333,7 @@ const PhishingSimulator = ({
     if (feedback || showClueFeedback) return;
     setClassification(choice);
     if (choice !== scenario.expectedClassification) {
+      onCheckpointResult(`challenge:${challenge.id}:scenario:${scenario.id}`, false);
       onAnswer(false, scenario.classificationError);
     } else {
       onClearFeedback();
@@ -992,6 +1350,7 @@ const PhishingSimulator = ({
 
     const isCorrect = scenario.clues.every((clue) => selectedClues.includes(clue.id));
     if (!isCorrect) {
+      onCheckpointResult(`challenge:${challenge.id}:scenario:${scenario.id}`, false);
       onAnswer(
         false,
         scenario.expectedClassification === 'fake'
@@ -1001,6 +1360,7 @@ const PhishingSimulator = ({
       return;
     }
 
+    onCheckpointResult(`challenge:${challenge.id}:scenario:${scenario.id}`, true);
     onClearFeedback();
     setShowClueFeedback(true);
   };
@@ -1510,6 +1870,7 @@ const PasswordLoginSimulator = ({
   maxLevel,
   onContinue,
   resetKey,
+  onCheckpointResult,
 }: {
   challenge: Challenge;
   step: 'intro' | 'mission' | 'activity';
@@ -1521,6 +1882,7 @@ const PasswordLoginSimulator = ({
   maxLevel: number;
   onContinue: () => void;
   resetKey: string;
+  onCheckpointResult: (checkpointId: string, isCorrect: boolean) => void;
 }) => {
   const [loginStep, setLoginStep] = useState<'password' | 'mfa' | 'manager'>('password');
   const [password, setPassword] = useState('');
@@ -1544,6 +1906,7 @@ const PasswordLoginSimulator = ({
       return;
     }
 
+    onCheckpointResult(`challenge:${challenge.id}:password`, true);
     setLoginStep('mfa');
     onClearFeedback();
     setCurrentMfaCode(createMfaCode());
@@ -1552,11 +1915,13 @@ const PasswordLoginSimulator = ({
 
   const submitMfa = () => {
     if (mfaCode.trim() === currentMfaCode) {
+      onCheckpointResult(`challenge:${challenge.id}:mfa`, true);
       setLoginStep('manager');
       onClearFeedback();
       return;
     }
 
+    onCheckpointResult(`challenge:${challenge.id}:mfa`, false);
     const nextCode = createMfaCode();
     setCurrentMfaCode(nextCode);
     setMfaCode('');
@@ -1565,6 +1930,7 @@ const PasswordLoginSimulator = ({
 
   const handlePasswordManagerChoice = (choice: 'yes' | 'no') => {
     if (choice === 'yes') {
+      onCheckpointResult(`challenge:${challenge.id}:manager`, true);
       onClearFeedback();
       setSuccessFeedbackText(
         'Well done! With strong passwords you protect your accounts and KONE.\n\nYou defended KONE systems with strong password practices. Our protection level has increased.',
@@ -1573,6 +1939,7 @@ const PasswordLoginSimulator = ({
       return;
     }
 
+    onCheckpointResult(`challenge:${challenge.id}:manager`, false);
     onAnswer(false, 'Password managers help keep passwords secure without needing to remember every password yourself. Try again.');
   };
 
@@ -1895,9 +2262,11 @@ const PasswordLoginSimulator = ({
 const ColleagueCheckSimulator = ({
   scenario,
   onComplete,
+  onCheckpointResult,
 }: {
   scenario: ColleagueCheckScenario;
   onComplete: () => void;
+  onCheckpointResult: (checkpointId: string, isCorrect: boolean) => void;
 }) => {
   const [selectedDialogue, setSelectedDialogue] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; isCorrect: boolean } | null>(null);
@@ -1916,6 +2285,7 @@ const ColleagueCheckSimulator = ({
   const handleAnswerChoice = (answer: ColleagueCheckScenario['answers'][number]) => {
     if ((!selectedDialogue && !isTeamsScenario) || feedback) return;
 
+    onCheckpointResult(`colleague:${scenario.id}`, answer.isCorrect);
     setFeedback({
       text: answer.isCorrect ? answer.feedback : `Not quite. ${answer.feedback}`,
       isCorrect: answer.isCorrect,
@@ -2077,6 +2447,180 @@ const ColleagueCheckSimulator = ({
         </div>
       </div>
     </div>
+  );
+};
+
+const FinalQuizSimulator = ({
+  questions,
+  currentIndex,
+  answers,
+  result,
+  onSelectAnswer,
+  onNext,
+  onRestartQuiz,
+  onRestartTraining,
+}: {
+  questions: FinalQuizQuestion[];
+  currentIndex: number;
+  answers: Record<string, string>;
+  result: FinalQuizResult | null;
+  onSelectAnswer: (questionId: string, optionId: string) => void;
+  onNext: () => void;
+  onRestartQuiz: () => void;
+  onRestartTraining: () => void;
+}) => {
+  const currentQuestion = questions[currentIndex];
+  const selectedOptionId = currentQuestion ? answers[currentQuestion.id] : null;
+  const selectedOption = currentQuestion?.options.find((option) => option.id === selectedOptionId) ?? null;
+
+  if (result) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="page-narrow py-16 xl:py-20 space-y-8"
+      >
+        <div className="text-center space-y-4">
+          <div className="inline-flex p-4 rounded-full bg-brand-blue/10 border border-brand-blue/20">
+            {result.passed ? <ShieldCheck className="w-12 h-12 text-brand-blue" /> : <ShieldAlert className="w-12 h-12 text-brand-blue" />}
+          </div>
+          <h2 className="text-4xl xl:text-5xl font-bold text-black">
+            {result.passed ? 'Final quiz complete' : 'Final quiz needs another try'}
+          </h2>
+          <p className="text-black/70 text-lg xl:text-xl">
+            {result.passed
+              ? `You answered ${result.correctCount} out of ${result.total} questions correctly and proved you know how to defend KONE.`
+              : `You answered ${result.correctCount} out of ${result.total} questions correctly. Review the questions and try again to strengthen your defenses.`}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-black/10 p-6 xl:p-8 shadow-sm shadow-black/10 space-y-4">
+          <div
+            className={`rounded-xl border p-5 xl:p-6 ${
+              result.passed ? 'bg-brand-blue/5 border-brand-blue/20 text-black' : 'bg-black text-white border-black'
+            }`}
+          >
+            <p className="text-base xl:text-lg font-medium">
+              {result.passed
+                ? "Keep it up! Your contribution as KONE's defender is invaluable."
+                : 'Take the quiz again until the key cybersecurity actions feel familiar.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {!result.passed && (
+              <button
+                type="button"
+                onClick={onRestartQuiz}
+                className="px-6 py-3 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+              >
+                Retake final quiz
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onRestartTraining}
+              className={`px-6 py-3 rounded-lg text-sm xl:text-base font-bold transition-colors ${
+                result.passed
+                  ? 'bg-black text-white hover:bg-brand-blue'
+                  : 'border border-black/15 text-black hover:bg-brand-blue/5'
+              }`}
+            >
+              Restart training
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (!currentQuestion) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="page-narrow py-12 xl:py-14 space-y-8"
+    >
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-brand-blue">
+          <Shield className="w-5 h-5 text-brand-blue" />
+          <span className="text-xs font-mono tracking-widest font-bold">Final quiz</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-3xl xl:text-4xl font-black text-black tracking-tight">Prove your defenses</h2>
+          <p className="text-xs font-mono text-brand-blue">
+            Question {currentIndex + 1} / {questions.length}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm xl:text-base font-bold text-black">Quiz progress</p>
+          <p className="text-xs font-mono text-brand-blue">{Object.keys(answers).length} answered</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-black/10 overflow-hidden shadow-sm shadow-black/10">
+        <div className="px-6 py-5 xl:px-8 xl:py-6 border-b border-black/10 bg-black text-white">
+          <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">RECOVERY QUIZ</p>
+          <h3 className="mt-2 text-2xl xl:text-3xl font-bold">{currentQuestion.prompt}</h3>
+        </div>
+
+        <div className="p-6 xl:p-8 space-y-4">
+          {currentQuestion.options.map((option) => {
+            const isSelected = option.id === selectedOptionId;
+            const isAnswered = !!selectedOption;
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                disabled={isAnswered}
+                onClick={() => onSelectAnswer(currentQuestion.id, option.id)}
+                className={`w-full p-5 xl:p-6 rounded-xl border text-left text-base xl:text-lg transition-all ${
+                  !isAnswered
+                    ? 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
+                    : option.isCorrect
+                      ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
+                      : isSelected
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white border-black/10 text-black/45'
+                }`}
+              >
+                {option.text}
+              </button>
+            );
+          })}
+
+          {selectedOption && (
+            <div
+              className={`rounded-xl border p-5 xl:p-6 space-y-4 ${
+                selectedOption.isCorrect ? 'bg-brand-blue/10 border-brand-blue/20 text-brand-blue' : 'bg-black border-black text-white'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                {selectedOption.isCorrect ? (
+                  <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
+                ) : (
+                  <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+                )}
+                <p className="text-sm xl:text-base leading-relaxed font-medium">{selectedOption.feedback}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onNext}
+                className="px-6 py-3 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+              >
+                {currentIndex === questions.length - 1 ? 'Finish quiz' : 'Next question'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
@@ -2322,6 +2866,287 @@ const getStandardMissionConfig = (challengeId: string, role: Role): StandardMiss
   return STANDARD_MISSION_CONFIGS[challengeId];
 };
 
+const FINAL_QUIZ_SHARED_QUESTIONS: FinalQuizQuestion[] = [
+  {
+    id: 'shared-phishing-link',
+    prompt: 'You receive an urgent message asking you to sign in through an unfamiliar link. What should you do first?',
+    options: [
+      {
+        id: 'verify',
+        text: 'Stop and verify the request through a trusted KONE channel before doing anything.',
+        isCorrect: true,
+        feedback: 'Correct. Urgent sign-in requests with unfamiliar links should always be verified through a trusted channel first.',
+      },
+      {
+        id: 'open',
+        text: 'Open the link quickly so your account does not get locked.',
+        isCorrect: false,
+        feedback: 'That increases the risk. Criminals often use urgency to push people into clicking malicious links.',
+      },
+      {
+        id: 'forward',
+        text: 'Forward it to a colleague and ask them to test the link for you.',
+        isCorrect: false,
+        feedback: 'That spreads the risk. Suspicious links should not be opened or passed on to others.',
+      },
+    ],
+  },
+  {
+    id: 'shared-passwords-mfa',
+    prompt: 'Which option best protects your KONE account?',
+    options: [
+      {
+        id: 'strong-unique',
+        text: 'Use a strong unique password, store it safely in a password manager, and use MFA.',
+        isCorrect: true,
+        feedback: 'Correct. Strong unique passwords, a password manager, and MFA work together to protect your account.',
+      },
+      {
+        id: 'reuse',
+        text: 'Reuse one memorable password for all work systems so you never forget it.',
+        isCorrect: false,
+        feedback: 'Reusing passwords is risky. If one account is exposed, criminals can try the same password elsewhere.',
+      },
+      {
+        id: 'share',
+        text: 'Share your password with a trusted colleague in case you are absent.',
+        isCorrect: false,
+        feedback: 'Passwords should never be shared. Shared access creates unnecessary risk and weakens accountability.',
+      },
+    ],
+  },
+  {
+    id: 'shared-approved-channels',
+    prompt: 'What is the safest way to handle confidential work information?',
+    options: [
+      {
+        id: 'approved',
+        text: 'Keep it only in approved KONE channels and storage locations.',
+        isCorrect: true,
+        feedback: 'Correct. Confidential information should stay in approved KONE channels and storage locations only.',
+      },
+      {
+        id: 'personal',
+        text: 'Send it to your personal email so you can review it later.',
+        isCorrect: false,
+        feedback: 'Personal email is not an approved channel for KONE work information.',
+      },
+      {
+        id: 'desktop',
+        text: 'Save it to any local device as long as the file name looks harmless.',
+        isCorrect: false,
+        feedback: 'Where information is stored matters. Sensitive material should stay in approved locations, not arbitrary local storage.',
+      },
+    ],
+  },
+];
+
+const FINAL_QUIZ_ROLE_QUESTIONS: Record<Exclude<Role, null>, FinalQuizQuestion[]> = {
+  office: [
+    {
+      id: 'office-clean-desk',
+      prompt: 'You leave your desk for a meeting and confidential notes are still visible. What should you do?',
+      options: [
+        {
+          id: 'lock-clear',
+          text: 'Lock your workstation and remove or secure the visible notes before leaving.',
+          isCorrect: true,
+          feedback: 'Correct. Visible documents and open workstations can expose sensitive KONE information.',
+        },
+        {
+          id: 'later',
+          text: 'Leave them there if you will be back soon.',
+          isCorrect: false,
+          feedback: 'Even short absences can expose visible information to the wrong people.',
+        },
+        {
+          id: 'hide-under',
+          text: 'Place the notes under your keyboard and leave the computer open.',
+          isCorrect: false,
+          feedback: 'The workstation still needs to be secured, and sensitive material should not be left exposed nearby.',
+        },
+      ],
+    },
+    {
+      id: 'office-computer-use',
+      prompt: 'A colleague recommends an unapproved tool to make your office work faster. What is the best response?',
+      options: [
+        {
+          id: 'approved-only',
+          text: 'Use only approved KONE tools and follow internal guidance before using new software or AI tools.',
+          isCorrect: true,
+          feedback: 'Correct. Office systems should use approved tools only, especially when handling company information.',
+        },
+        {
+          id: 'trial',
+          text: 'Install it first and ask for approval later if it seems useful.',
+          isCorrect: false,
+          feedback: 'Approval needs to come before use. Unapproved software can expose KONE systems and data.',
+        },
+        {
+          id: 'home-device',
+          text: 'Test it with work files on your personal device instead.',
+          isCorrect: false,
+          feedback: 'Work files should not be moved to personal devices just to try a new tool.',
+        },
+      ],
+    },
+  ],
+  factory: [
+    {
+      id: 'factory-shared-workstation',
+      prompt: 'What is the correct way to use a shared workstation in a factory environment?',
+      options: [
+        {
+          id: 'approved-work-only',
+          text: 'Use it only for approved factory tasks and leave it ready for the next worker.',
+          isCorrect: true,
+          feedback: 'Correct. Shared factory workstations are for approved operational tasks only and should be left in a clean state.',
+        },
+        {
+          id: 'personal-email',
+          text: 'Use it for quick personal email checks if production is quiet.',
+          isCorrect: false,
+          feedback: 'Personal email is not appropriate on a shared workstation.',
+        },
+        {
+          id: 'save-logins',
+          text: 'Save your personal logins in the browser to make future shifts easier.',
+          isCorrect: false,
+          feedback: 'Shared workstations should not retain personal credentials or private browsing data.',
+        },
+      ],
+    },
+    {
+      id: 'factory-operational-access',
+      prompt: 'A shared workstation is still signed in after the previous user leaves. What should you do?',
+      options: [
+        {
+          id: 'sign-out',
+          text: 'Sign out or return the workstation to a clean state before using or leaving it.',
+          isCorrect: true,
+          feedback: 'Correct. Shared systems should always be returned to a clean and controlled state.',
+        },
+        {
+          id: 'leave-open',
+          text: 'Leave it open since the next approved worker will probably need it.',
+          isCorrect: false,
+          feedback: 'Leaving a shared workstation open weakens access control and accountability.',
+        },
+        {
+          id: 'use-account',
+          text: 'Keep using the already open account to save time.',
+          isCorrect: false,
+          feedback: 'Workers should not continue using another person’s active session.',
+        },
+      ],
+    },
+  ],
+  field: [
+    {
+      id: 'field-safe-connection',
+      prompt: 'You need to access a work system while on the move. Which option is safest?',
+      options: [
+        {
+          id: 'secure-connection',
+          text: 'Use approved secure connections, such as KONE-approved mobile access or VPN guidance.',
+          isCorrect: true,
+          feedback: 'Correct. Field work should use approved secure connection methods when accessing work systems remotely.',
+        },
+        {
+          id: 'open-wifi',
+          text: 'Use any open public Wi-Fi if the signal is strong enough.',
+          isCorrect: false,
+          feedback: 'Open public Wi-Fi can expose work traffic and should not be trusted by default.',
+        },
+        {
+          id: 'borrowed-phone',
+          text: 'Sign in from another person’s phone if your own battery is low.',
+          isCorrect: false,
+          feedback: 'Work access should stay on approved devices, not borrowed personal phones.',
+        },
+      ],
+    },
+    {
+      id: 'field-device-apps',
+      prompt: 'What should you do if someone recommends a useful-looking app for your work device in the field?',
+      options: [
+        {
+          id: 'approved-apps-only',
+          text: 'Use only approved apps and tools on your work device.',
+          isCorrect: true,
+          feedback: 'Correct. Even useful-looking apps should not be installed unless they are approved for work use.',
+        },
+        {
+          id: 'try-briefly',
+          text: 'Try it briefly and remove it later if it causes problems.',
+          isCorrect: false,
+          feedback: 'Installing an unapproved app can already create risk, even if you remove it later.',
+        },
+        {
+          id: 'share-device',
+          text: 'Let a customer install it for you if they have used it before.',
+          isCorrect: false,
+          feedback: 'Customers or third parties should not install apps on your work device.',
+        },
+      ],
+    },
+  ],
+};
+
+const getCheckpointIdsForChallenge = (challenge: Challenge, role: Role) => {
+  if (challenge.topic === 'Phishing') {
+    return PHISHING_SCENARIOS.map((scenario) => `challenge:${challenge.id}:scenario:${scenario.id}`);
+  }
+
+  if (challenge.id === 'shared-passwords') {
+    return ['password', 'mfa', 'manager'].map((stepId) => `challenge:${challenge.id}:${stepId}`);
+  }
+
+  if (challenge.id === 'office-confidentiality') {
+    return ['labels', 'channels', 'handling'].map((stepId) => `challenge:${challenge.id}:${stepId}`);
+  }
+
+  const missionConfig = getStandardMissionConfig(challenge.id, role);
+  const scorableSteps =
+    missionConfig?.steps.filter(
+      (step) => step.kind === 'quiz' || step.kind === 'hotspot' || step.kind === 'carousel',
+    ) ?? [`${challenge.id}-step-1`];
+
+  return scorableSteps.map((step) =>
+    typeof step === 'string' ? `challenge:${challenge.id}:step:${step}` : `challenge:${challenge.id}:step:${step.id}`,
+  );
+};
+
+const getFinalQuizQuestions = (role: Role) => {
+  const resolvedRole = role ?? 'office';
+  return [...FINAL_QUIZ_SHARED_QUESTIONS, ...FINAL_QUIZ_ROLE_QUESTIONS[resolvedRole]];
+};
+
+const getFinalOutcomeContent = (percentage: number) => {
+  if (percentage === 100) {
+    return {
+      body: 'You successfully defended KONE against attacks. Our protection is robust.',
+      followUp: "Keep it up! Your contribution as KONE's defender is invaluable.",
+      needsQuiz: false,
+    };
+  }
+
+  if (percentage > 50) {
+    return {
+      body: 'The criminals have been defeated, but our defenses need to still be improved.',
+      followUp: "Keep it up! Your contribution as KONE's defender is invaluable.",
+      needsQuiz: false,
+    };
+  }
+
+  return {
+    body: 'The criminals have been defeated for now. Our defenses remain low and need to be removed. Take this quiz to ensure you will be able to do this in the future.',
+    followUp: null,
+    needsQuiz: true,
+  };
+};
+
 const renderPhysicalSecurityScene = ({
   scene,
   onHotspotSelect,
@@ -2458,6 +3283,7 @@ const StandardChallengeSimulator = ({
   currentLevel,
   maxLevel,
   onContinue,
+  onCheckpointResult,
 }: {
   challenge: Challenge;
   role: Role;
@@ -2469,6 +3295,7 @@ const StandardChallengeSimulator = ({
   currentLevel: number;
   maxLevel: number;
   onContinue: () => void;
+  onCheckpointResult: (checkpointId: string, isCorrect: boolean) => void;
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [missionComplete, setMissionComplete] = useState(false);
@@ -2498,6 +3325,7 @@ const StandardChallengeSimulator = ({
 
   const currentStep = missionSteps[currentStepIndex];
   const finalFeedbackText = missionConfig?.finalFeedback;
+  const currentCheckpointId = `challenge:${challenge.id}:step:${currentStep.id}`;
 
   useEffect(() => {
     if (currentStep.kind === 'carousel') {
@@ -2533,10 +3361,12 @@ const StandardChallengeSimulator = ({
     if (feedback) return;
 
     if (!option.isCorrect) {
+      onCheckpointResult(currentCheckpointId, false);
       onAnswer(false, option.feedback);
       return;
     }
 
+    onCheckpointResult(currentCheckpointId, true);
     advanceOrComplete(option.feedback);
   };
 
@@ -2549,10 +3379,12 @@ const StandardChallengeSimulator = ({
     if (feedback || currentStep.kind !== 'hotspot') return;
 
     if (!isCorrect) {
+      onCheckpointResult(currentCheckpointId, false);
       onAnswer(false, currentStep.errorFeedback);
       return;
     }
 
+    onCheckpointResult(currentCheckpointId, true);
     advanceOrComplete();
   };
 
@@ -2577,10 +3409,12 @@ const StandardChallengeSimulator = ({
 
     const isCorrect = currentStep.slides.every((slide) => carouselAnswers[slide.id] === slide.correctAnswer);
     if (!isCorrect) {
+      onCheckpointResult(currentCheckpointId, false);
       onAnswer(false, currentStep.errorFeedback);
       return;
     }
 
+    onCheckpointResult(currentCheckpointId, true);
     advanceOrComplete();
   };
 
@@ -2900,6 +3734,7 @@ export default function App() {
   const [role, setRole] = useState<Role>(null);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [completedColleagueScenarioIds, setCompletedColleagueScenarioIds] = useState<string[]>([]);
+  const [checkpointResults, setCheckpointResults] = useState<Record<string, boolean>>({});
   const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
   const [activeColleagueScenario, setActiveColleagueScenario] = useState<ColleagueCheckScenario | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; isCorrect: boolean } | null>(null);
@@ -2908,6 +3743,10 @@ export default function App() {
   const [confidentialityMissionStep, setConfidentialityMissionStep] = useState<'intro' | 'mission' | 'activity'>('intro');
   const [standardMissionStep, setStandardMissionStep] = useState<'intro' | 'mission' | 'activity'>('intro');
   const [missionIntroStage, setMissionIntroStage] = useState<'video' | 'warning' | 'content'>('video');
+  const [finalQuizIndex, setFinalQuizIndex] = useState(0);
+  const [finalQuizAnswers, setFinalQuizAnswers] = useState<Record<string, string>>({});
+  const [finalQuizResult, setFinalQuizResult] = useState<FinalQuizResult | null>(null);
+  const [finalQuizPreviewRole, setFinalQuizPreviewRole] = useState<Exclude<Role, null> | null>(null);
 
   const getRoleChallenges = () => {
     switch (role) {
@@ -2950,6 +3789,14 @@ export default function App() {
   );
   const totalProgressCount = completedIds.length + completedAvailableColleagueScenarioIds.length;
   const totalProgressMax = allChallenges.length + availableColleagueScenarios.length;
+  const scoredCheckpointIds = [
+    ...allChallenges.flatMap((challenge) => getCheckpointIdsForChallenge(challenge, role)),
+    ...availableColleagueScenarios.map((scenario) => `colleague:${scenario.id}`),
+  ];
+  const finalScoreTotal = scoredCheckpointIds.length;
+  const finalScoreCorrect = scoredCheckpointIds.filter((checkpointId) => checkpointResults[checkpointId]).length;
+  const finalScorePercentage = finalScoreTotal === 0 ? 0 : Math.round((finalScoreCorrect / finalScoreTotal) * 100);
+  const finalQuizQuestions = getFinalQuizQuestions(finalQuizPreviewRole ?? role);
 
   const navigateTo = (nextView: AppState) => {
     if (nextView === 'mission-intro') {
@@ -2972,6 +3819,32 @@ export default function App() {
     setActiveColleagueScenario(null);
   };
 
+  const resetFinalQuiz = () => {
+    setFinalQuizIndex(0);
+    setFinalQuizAnswers({});
+    setFinalQuizResult(null);
+  };
+
+  const restartTraining = () => {
+    setCompletedIds([]);
+    setCompletedColleagueScenarioIds([]);
+    setCheckpointResults({});
+    resetChallengeSession();
+    resetColleagueCheckSession();
+    resetFinalQuiz();
+    setFinalQuizPreviewRole(null);
+    setRole(null);
+    setViewHistory([]);
+    setView('intro');
+  };
+
+  const recordCheckpointResult = (checkpointId: string, isCorrect: boolean) => {
+    setCheckpointResults((prev) => {
+      if (checkpointId in prev) return prev;
+      return { ...prev, [checkpointId]: isCorrect };
+    });
+  };
+
   const goBack = () => {
     if (viewHistory.length > 0) {
       const prevView = viewHistory[viewHistory.length - 1];
@@ -2980,6 +3853,10 @@ export default function App() {
       }
       if (view === 'colleague-check') {
         resetColleagueCheckSession();
+      }
+      if (view === 'final-quiz') {
+        resetFinalQuiz();
+        setFinalQuizPreviewRole(null);
       }
       if (prevView === 'mission-intro') {
         setMissionIntroStage('video');
@@ -3028,7 +3905,7 @@ export default function App() {
 
     const nextProgressCount = nextCompletedIds.length + completedAvailableColleagueScenarioIds.length;
     if (nextProgressCount === totalProgressMax) {
-      navigateTo('victory');
+      navigateTo('course-complete');
     } else {
       navigateTo('dashboard');
     }
@@ -3040,10 +3917,39 @@ export default function App() {
     }
     resetColleagueCheckSession();
     if (totalProgressCount + 1 === totalProgressMax) {
-      navigateTo('victory');
+      navigateTo('course-complete');
     } else {
       navigateTo('dashboard');
     }
+  };
+
+  const startFinalQuiz = (previewRole?: Exclude<Role, null>) => {
+    resetFinalQuiz();
+    setFinalQuizPreviewRole(previewRole ?? null);
+    navigateTo('final-quiz');
+  };
+
+  const handleFinalQuizAnswer = (questionId: string, optionId: string) => {
+    setFinalQuizAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+  };
+
+  const handleFinalQuizNext = () => {
+    if (finalQuizIndex < finalQuizQuestions.length - 1) {
+      setFinalQuizIndex((prev) => prev + 1);
+      return;
+    }
+
+    const correctCount = finalQuizQuestions.reduce((count, question) => {
+      const selectedOptionId = finalQuizAnswers[question.id];
+      const selectedOption = question.options.find((option) => option.id === selectedOptionId);
+      return count + (selectedOption?.isCorrect ? 1 : 0);
+    }, 0);
+
+    setFinalQuizResult({
+      passed: correctCount >= 4,
+      correctCount,
+      total: finalQuizQuestions.length,
+    });
   };
 
   const IntroView = () => (
@@ -3184,6 +4090,108 @@ export default function App() {
     </motion.div>
   );
 
+  const ReviewPreviewSection = () => (
+    <div className="rounded-2xl border border-black/10 bg-black/5 p-6 xl:p-8 space-y-8">
+      <div className="space-y-2">
+        <p className="text-xs font-mono tracking-widest text-black/50">REVIEW PREVIEW</p>
+        <h3 className="text-2xl xl:text-3xl font-bold text-black">Final page (after everything has been completed)</h3>
+        <p className="text-black/70 text-sm xl:text-base">
+          This is a review-only mock-up so we can inspect the ending states and role-based quizzes without clicking through the whole course.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 xl:gap-6">
+        {[100, 75, 40].map((percentage) => {
+          const outcome = getFinalOutcomeContent(percentage);
+
+          return (
+            <div
+              key={percentage}
+              className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden"
+            >
+              <div className="px-6 py-5 border-b border-black/10 bg-black text-white">
+                <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">FINAL PAGE MOCK-UP</p>
+                <h4 className="mt-2 text-xl xl:text-2xl font-bold">The criminals have been defeated</h4>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="space-y-3">
+                  <p className="text-sm xl:text-base text-black/80">{outcome.body}</p>
+                  {outcome.followUp && <p className="text-sm xl:text-base text-black/80">{outcome.followUp}</p>}
+                </div>
+
+                <div className="rounded-xl border border-brand-blue/20 bg-brand-blue/5 p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-bold text-black">Protection level</p>
+                    <p className="text-xs font-mono text-brand-blue">{percentage}%</p>
+                  </div>
+                  <div className="h-2 bg-black/10 rounded-full overflow-hidden border border-black/10">
+                    <div className="h-full bg-brand-blue" style={{ width: `${percentage}%` }} />
+                  </div>
+                </div>
+
+                {outcome.needsQuiz ? (
+                  <button
+                    type="button"
+                    onClick={() => startFinalQuiz(role ?? 'office')}
+                    className="w-full px-5 py-3 rounded-xl bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+                  >
+                    Final quiz based on role if success less than 50%
+                  </button>
+                ) : (
+                  <div className="w-full px-5 py-3 rounded-xl border border-black/10 bg-black/[0.03] text-sm xl:text-base font-bold text-black/60 text-center">
+                    Restart training
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="space-y-4">
+        <div className="rounded-xl border border-black/10 bg-[#f1f3f5] p-4 xl:p-5">
+          <p className="text-sm xl:text-base font-bold text-black">Final quiz based on role if success less than 50%</p>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 xl:gap-6">
+          {(['office', 'factory', 'field'] as const).map((previewRole) => {
+            const previewQuestions = getFinalQuizQuestions(previewRole);
+
+            return (
+              <div
+                key={previewRole}
+                className="bg-white rounded-2xl border border-black/10 shadow-sm shadow-black/10 overflow-hidden"
+              >
+                <div className="px-6 py-5 border-b border-black/10 bg-black text-white">
+                  <p className="text-[10px] font-mono tracking-[0.25em] text-white/65">QUIZ PREVIEW</p>
+                  <h4 className="mt-2 text-xl xl:text-2xl font-bold capitalize">{previewRole} Final quiz</h4>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  {previewQuestions.map((question, index) => (
+                    <div key={question.id} className="rounded-xl border border-black/10 bg-black/[0.02] p-4">
+                      <p className="text-[10px] font-mono tracking-widest text-black/45">QUESTION {index + 1}</p>
+                      <p className="mt-2 text-sm xl:text-base text-black/80">{question.prompt}</p>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => startFinalQuiz(previewRole)}
+                    className="w-full px-5 py-3 rounded-xl bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
+                  >
+                    Open {previewRole} quiz page
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
   const RoleSelectionView = () => (
     <div className="page-wide space-y-12 xl:space-y-14 py-12 xl:py-14">
       <div className="text-center space-y-4">
@@ -3207,6 +4215,8 @@ export default function App() {
           </button>
         ))}
       </div>
+
+      <ReviewPreviewSection />
     </div>
   );
 
@@ -3299,6 +4309,7 @@ export default function App() {
           );
         })}
       </div>
+
     </div>
   );
 
@@ -3329,6 +4340,7 @@ export default function App() {
             currentLevel={totalProgressCount}
             maxLevel={totalProgressMax}
             onContinue={finishChallenge}
+            onCheckpointResult={recordCheckpointResult}
           />
         ) : isConfidentialityMission ? (
           <ConfidentialitySimulator
@@ -3342,6 +4354,7 @@ export default function App() {
             maxLevel={totalProgressMax}
             onContinue={finishChallenge}
             resetKey={activeChallenge.id}
+            onCheckpointResult={recordCheckpointResult}
           />
         ) : isPasswordLoginPractice ? (
           <PasswordLoginSimulator
@@ -3355,6 +4368,7 @@ export default function App() {
             maxLevel={totalProgressMax}
             onContinue={finishChallenge}
             resetKey={activeChallenge.id}
+            onCheckpointResult={recordCheckpointResult}
           />
         ) : (
           <StandardChallengeSimulator
@@ -3368,53 +4382,70 @@ export default function App() {
             currentLevel={totalProgressCount}
             maxLevel={totalProgressMax}
             onContinue={finishChallenge}
+            onCheckpointResult={recordCheckpointResult}
           />
         )}
       </div>
     );
   };
 
-  const VictoryView = () => (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="page-narrow text-center py-20 xl:py-24 space-y-8 xl:space-y-10"
-    >
-      <div className="relative inline-block">
-        <Trophy className="w-24 h-24 text-brand-blue mx-auto" />
+  const CourseCompleteView = () => (
+    (() => {
+      const outcome = getFinalOutcomeContent(finalScorePercentage);
+
+      return (
         <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="absolute inset-0 bg-brand-blue/20 blur-2xl rounded-full -z-10"
-        />
-      </div>
-      <div className="space-y-4">
-        <h2 className="text-4xl xl:text-5xl font-bold text-black">Perimeter secured</h2>
-        <p className="text-black/70 text-lg xl:text-xl">
-          Excellent work. You have successfully identified all threats and strengthened the company&apos;s defenses. The
-          villain has been repelled.
-        </p>
-      </div>
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="page-narrow text-center py-20 xl:py-24 space-y-8 xl:space-y-10"
+        >
+          <div className="relative inline-block">
+            <Trophy className="w-24 h-24 text-brand-blue mx-auto" />
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="absolute inset-0 bg-brand-blue/20 blur-2xl rounded-full -z-10"
+            />
+          </div>
+          <div className="space-y-4">
+            <h2 className="text-4xl xl:text-5xl font-bold text-black">The criminals have been defeated</h2>
+            <p className="text-black/70 text-lg xl:text-xl">{outcome.body}</p>
+            {outcome.followUp && <p className="text-black/70 text-lg xl:text-xl">{outcome.followUp}</p>}
+          </div>
 
-      <div className="p-8 xl:p-10 bg-white rounded-2xl border border-black/10">
-        <div className="flex items-center justify-center gap-2 text-brand-blue font-mono text-sm xl:text-base font-bold">
-          <ShieldCheck className="w-5 h-5" /> Defense status: 100% integrity
-        </div>
-      </div>
+          <div className="p-8 xl:p-10 bg-white rounded-2xl border border-black/10 space-y-5">
+            <div className="space-y-2">
+              <div className="flex items-center justify-center gap-2 text-brand-blue font-mono text-sm xl:text-base font-bold">
+                <ShieldCheck className="w-5 h-5" /> Protection level: {finalScorePercentage}%
+              </div>
+              <div className="mx-auto w-full max-w-md h-3 bg-black/10 rounded-full overflow-hidden border border-black/10">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${finalScorePercentage}%` }}
+                  className="h-full bg-brand-blue"
+                />
+              </div>
+            </div>
+          </div>
 
-      <button
-        onClick={() => {
-          setCompletedIds([]);
-          setCompletedColleagueScenarioIds([]);
-          resetChallengeSession();
-          resetColleagueCheckSession();
-          setView('intro');
-        }}
-        className="action-button bg-black hover:bg-brand-blue text-white rounded-full"
-      >
-        Restart training
-      </button>
-    </motion.div>
+          {outcome.needsQuiz ? (
+            <button
+              onClick={startFinalQuiz}
+              className="action-button bg-brand-blue hover:opacity-90 text-white rounded-full"
+            >
+              Take final quiz
+            </button>
+          ) : (
+            <button
+              onClick={restartTraining}
+              className="action-button bg-black hover:bg-brand-blue text-white rounded-full"
+            >
+              Restart training
+            </button>
+          )}
+        </motion.div>
+      );
+    })()
   );
 
   return (
@@ -3440,18 +4471,31 @@ export default function App() {
 
       <main className="app-shell">
         <AnimatePresence mode="wait">
-          {view === 'intro' && <IntroView key="intro" />}
-          {view === 'mission-intro' && <MissionIntroView key="mission" />}
-          {view === 'role-selection' && <RoleSelectionView key="roles" />}
-          {view === 'dashboard' && <DashboardView key="dash" />}
-          {view === 'challenge' && <ChallengeView key="challenge" />}
+          {view === 'intro' && React.cloneElement(IntroView(), { key: 'intro' })}
+          {view === 'mission-intro' && React.cloneElement(MissionIntroView(), { key: 'mission' })}
+          {view === 'role-selection' && React.cloneElement(RoleSelectionView(), { key: 'roles' })}
+          {view === 'dashboard' && React.cloneElement(DashboardView(), { key: 'dash' })}
+          {view === 'challenge' && React.cloneElement(ChallengeView(), { key: 'challenge' })}
           {view === 'colleague-check' && activeColleagueScenario && (
             <ColleagueCheckSimulator
               scenario={activeColleagueScenario}
               onComplete={finishColleagueScenario}
+              onCheckpointResult={recordCheckpointResult}
             />
           )}
-          {view === 'victory' && <VictoryView key="victory" />}
+          {view === 'course-complete' && React.cloneElement(CourseCompleteView(), { key: 'course-complete' })}
+          {view === 'final-quiz' && (
+            <FinalQuizSimulator
+              questions={finalQuizQuestions}
+              currentIndex={finalQuizIndex}
+              answers={finalQuizAnswers}
+              result={finalQuizResult}
+              onSelectAnswer={handleFinalQuizAnswer}
+              onNext={handleFinalQuizNext}
+              onRestartQuiz={resetFinalQuiz}
+              onRestartTraining={restartTraining}
+            />
+          )}
         </AnimatePresence>
       </main>
     </div>

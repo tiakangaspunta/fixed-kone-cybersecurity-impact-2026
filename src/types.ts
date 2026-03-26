@@ -48,4 +48,5 @@ export type AppState =
   | 'dashboard'
   | 'challenge'
   | 'colleague-check'
-  | 'victory';
+  | 'course-complete'
+  | 'final-quiz';
