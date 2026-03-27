@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -688,27 +688,35 @@ const ConfidentialitySimulator = ({
     onClearFeedback();
   };
 
-  const resetActiveExercise = () => {
-    if (activityStep === 'labels') {
-      setLabelAssignments(createEmptyLabelAssignments());
-      setActiveTargetId(null);
-      setShowLabelFeedback(false);
-    } else if (activityStep === 'channels') {
-      setChannelAssignments(createEmptyChannelAssignments());
-    } else if (activityStep === 'handling') {
-      setHandlingSelections((prev) => ({ ...prev, [currentHandlingCategory.id]: [] }));
-    }
-    setDraggingId(null);
-    onClearFeedback();
-  };
-
   const handleFeedbackAction = () => {
     if (missionComplete) {
       onContinue();
       return;
     }
 
-    resetActiveExercise();
+    setDraggingId(null);
+    onClearFeedback();
+
+    if (activityStep === 'labels') {
+      setShowLabelFeedback(false);
+      setActivityStep('channels');
+      return;
+    }
+
+    if (activityStep === 'channels') {
+      setActivityStep('handling');
+      return;
+    }
+
+    if (handlingIndex === CONFIDENTIALITY_HANDLING_CATEGORIES.length - 1) {
+      setSuccessFeedbackText(
+        'You completed the confidentiality mission. Keep the KONE sensitivity labels and handling rules in mind as you move forward.',
+      );
+      setMissionComplete(true);
+      return;
+    }
+
+    setHandlingIndex((prev) => prev + 1);
   };
 
   const renderChannelChip = (channelId: ConfidentialityChannelId) => {
@@ -1250,7 +1258,7 @@ const ConfidentialitySimulator = ({
                   onClick={handleFeedbackAction}
                   className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-white hover:bg-brand-blue/5 text-black border border-black/15 text-sm xl:text-base font-bold transition-colors"
                 >
-                  Try again
+                  Continue
                 </button>
               </div>
             </div>
@@ -1321,12 +1329,26 @@ const PhishingSimulator = ({
     onClearFeedback();
   };
 
+  const completeMission = (feedbackText: string) => {
+    setShowClueFeedback(false);
+    setSuccessFeedbackText(feedbackText);
+    setMissionComplete(true);
+  };
+
   const handleFeedbackAction = () => {
     if (missionComplete) {
       onContinue();
       return;
     }
-    onClearFeedback();
+
+    if (scenarioIndex === PHISHING_SCENARIOS.length - 1) {
+      completeMission(
+        'You completed the phishing mission. Keep checking senders, links, and unusual requests as you move forward.',
+      );
+      return;
+    }
+
+    moveToNextScenario();
   };
 
   const handleClassification = (choice: MessageClassification) => {
@@ -1389,11 +1411,9 @@ const PhishingSimulator = ({
 
   const handleScenarioContinue = () => {
     if (scenarioIndex === PHISHING_SCENARIOS.length - 1) {
-      setShowClueFeedback(false);
-      setSuccessFeedbackText(
+      completeMission(
         "That's right! Always check these details to make sure messages are legitimate.\n\nYou defended KONE systems with strong cybersecurity practices. Our protection level has increased.",
       );
-      setMissionComplete(true);
       return;
     }
 
@@ -1775,7 +1795,7 @@ Keilasatama 3
                     : 'bg-white hover:bg-brand-blue/5 text-black border border-black/15'
                 }`}
               >
-                {feedback.isCorrect ? 'Continue mission' : 'Try again'}
+                {feedback.isCorrect ? 'Continue mission' : 'Continue'}
               </button>
             </div>
           ) : (
@@ -1943,19 +1963,32 @@ const PasswordLoginSimulator = ({
     onAnswer(false, 'Password managers help keep passwords secure without needing to remember every password yourself. Try again.');
   };
 
-  const resetPasswordManagerStep = () => {
-    setLoginStep('manager');
-    onClearFeedback();
-  };
-
   const handleFeedbackAction = () => {
     if (missionComplete) {
       onContinue();
       return;
     }
 
+    if (loginStep === 'password') {
+      setLoginStep('mfa');
+      setCurrentMfaCode(createMfaCode());
+      setMfaCode('');
+      onClearFeedback();
+      return;
+    }
+
+    if (loginStep === 'mfa') {
+      setLoginStep('manager');
+      onClearFeedback();
+      return;
+    }
+
     if (loginStep === 'manager') {
-      resetPasswordManagerStep();
+      onClearFeedback();
+      setSuccessFeedbackText(
+        'You completed the password mission. Keep strong passwords, MFA, and password managers in mind as you move forward.',
+      );
+      setMissionComplete(true);
       return;
     }
 
@@ -2248,7 +2281,7 @@ const PasswordLoginSimulator = ({
                   onClick={handleFeedbackAction}
                   className="px-6 py-2 xl:px-7 xl:py-3 rounded-lg bg-white hover:bg-brand-blue/5 text-black border border-black/15 text-sm xl:text-base font-bold transition-colors"
                 >
-                  Try again
+                  Continue
                 </button>
               </div>
             </div>
@@ -2290,10 +2323,6 @@ const ColleagueCheckSimulator = ({
       text: answer.isCorrect ? answer.feedback : `Not quite. ${answer.feedback}`,
       isCorrect: answer.isCorrect,
     });
-  };
-
-  const resetAnswer = () => {
-    setFeedback(null);
   };
 
   return (
@@ -2431,14 +2460,14 @@ const ColleagueCheckSimulator = ({
 
                   <button
                     type="button"
-                    onClick={feedback.isCorrect ? onComplete : resetAnswer}
+                    onClick={onComplete}
                     className={`w-full px-6 py-3 rounded-lg font-bold transition-colors ${
                       feedback.isCorrect
                         ? 'bg-brand-blue hover:opacity-90 text-white'
                         : 'bg-white hover:bg-brand-blue/5 text-black border border-black/15'
                     }`}
                   >
-                    {feedback.isCorrect ? 'Return to dashboard' : 'Try again'}
+                    {feedback.isCorrect ? 'Return to dashboard' : 'Continue'}
                   </button>
                 </div>
               )}
@@ -2631,6 +2660,11 @@ type StandardMissionStep =
       title: string;
       scenario: string;
       options: Challenge['options'];
+      visualPanels?: {
+        title: string;
+        placeholder: string;
+        tone: 'real' | 'fake' | 'safe' | 'unsafe';
+      }[];
     }
   | {
       id: string;
@@ -2638,6 +2672,11 @@ type StandardMissionStep =
       title: string;
       body: string;
       buttonLabel?: string;
+      guidanceCards?: {
+        title: string;
+        tone: 'do' | 'dont';
+        items: string[];
+      }[];
     }
   | {
       id: string;
@@ -2645,6 +2684,11 @@ type StandardMissionStep =
       title: string;
       body: string;
       buttonLabel?: string;
+      guidanceCards?: {
+        title: string;
+        tone: 'do' | 'dont';
+        items: string[];
+      }[];
     }
   | {
       id: string;
@@ -2746,23 +2790,283 @@ const STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
     steps: [
       {
         id: 'computer-use-remote-work',
-        kind: 'placeholder',
+        kind: 'info',
         title: 'Remote work',
-        body: 'Placeholder: How to work remotely',
+        body: `Remote work can expose your screen, device, and connection to people around you. Make choices that keep KONE information protected even when you are away from the office.`,
         buttonLabel: 'Continue',
+        guidanceCards: [
+          {
+            title: 'Do',
+            tone: 'do',
+            items: [
+              'Use approved secure connections such as VPN or mobile hotspot when needed.',
+              'Lock your screen whenever you step away from your laptop.',
+              'Choose seating that reduces shoulder surfing and protects what others can see.',
+            ],
+          },
+          {
+            title: "Don't",
+            tone: 'dont',
+            items: [
+              'Use untrusted public Wi-Fi for sensitive work without an approved secure connection.',
+              'Leave your laptop unattended in a public place.',
+              'Work with sensitive information where others can easily see your screen.',
+            ],
+          },
+        ],
       },
       {
-        id: 'computer-use-malware',
-        kind: 'placeholder',
+        id: 'computer-use-remote-screen',
+        kind: 'quiz',
+        title: 'Working remotely',
+        scenario: 'Which image shows the correct way to act when working remotely?',
+        visualPanels: [
+          {
+            title: 'Left image',
+            placeholder: 'SCREEN SHOWING',
+            tone: 'unsafe',
+          },
+          {
+            title: 'Right image',
+            placeholder: 'SCREEN PROTECTOR',
+            tone: 'safe',
+          },
+        ],
+        options: [
+          {
+            id: 'screen-left-correct',
+            text: 'The left image shows the correct way to act.',
+            isCorrect: false,
+            feedback: 'Not quite. A visible screen can expose KONE information to people nearby.',
+          },
+          {
+            id: 'screen-right-correct',
+            text: 'The right image shows the correct way to act.',
+            isCorrect: true,
+            feedback: 'Correct. Protecting your screen helps reduce the risk of shoulder surfing.',
+          },
+        ],
+      },
+      {
+        id: 'computer-use-remote-phone',
+        kind: 'quiz',
+        title: 'Working remotely',
+        scenario: 'Which image shows the correct way to act when working remotely?',
+        visualPanels: [
+          {
+            title: 'Left image',
+            placeholder: 'PHONE OPEN',
+            tone: 'unsafe',
+          },
+          {
+            title: 'Right image',
+            placeholder: 'PHONE LOCKED',
+            tone: 'safe',
+          },
+        ],
+        options: [
+          {
+            id: 'phone-left-correct',
+            text: 'The left image shows the correct way to act.',
+            isCorrect: false,
+            feedback: 'Not quite. Leaving a phone open can expose work information to others.',
+          },
+          {
+            id: 'phone-right-correct',
+            text: 'The right image shows the correct way to act.',
+            isCorrect: true,
+            feedback: 'Correct. Locking your phone protects work messages, apps, and accounts.',
+          },
+        ],
+      },
+      {
+        id: 'computer-use-remote-vpn',
+        kind: 'quiz',
+        title: 'Working remotely',
+        scenario: 'Which image shows the correct way to act when working remotely?',
+        visualPanels: [
+          {
+            title: 'Left image',
+            placeholder: 'VPN OFF',
+            tone: 'unsafe',
+          },
+          {
+            title: 'Right image',
+            placeholder: 'VPN ON',
+            tone: 'safe',
+          },
+        ],
+        options: [
+          {
+            id: 'vpn-left-correct',
+            text: 'The left image shows the correct way to act.',
+            isCorrect: false,
+            feedback: 'Not quite. Sensitive work should use approved secure connections.',
+          },
+          {
+            id: 'vpn-right-correct',
+            text: 'The right image shows the correct way to act.',
+            isCorrect: true,
+            feedback: 'Correct. Using an approved secure connection helps protect work traffic.',
+          },
+        ],
+      },
+      {
+        id: 'computer-use-malware-update',
+        kind: 'quiz',
         title: 'Malware',
-        body: 'Placeholder: Malware',
-        buttonLabel: 'Continue',
+        scenario:
+          'A browser pop-up says your video player is dangerously out of date and tells you to install an urgent update from an unfamiliar site.',
+        options: [
+          {
+            id: 'close-and-report',
+            text: 'Close the pop-up and use approved update channels or IT support if needed.',
+            isCorrect: true,
+            feedback: 'Correct. Updates should come from approved company processes, not random browser pop-ups.',
+          },
+          {
+            id: 'install-popup-update',
+            text: 'Install the update immediately so your computer stays protected.',
+            isCorrect: false,
+            feedback: 'Unexpected pop-ups can be malicious. Use approved update channels instead of installing software from unfamiliar sites.',
+          },
+          {
+            id: 'delay-then-install',
+            text: 'Ignore it for now, but install it later if the pop-up keeps appearing.',
+            isCorrect: false,
+            feedback: 'Repeated pop-ups do not make the source trustworthy. Do not install software from suspicious prompts.',
+          },
+        ],
       },
       {
         id: 'computer-use-using-ai',
-        kind: 'placeholder',
+        kind: 'info',
         title: 'Using AI',
-        body: 'Placeholder: Using AI',
+        body: `AI is a useful tool, but we must ensure security and confidentiality.
+
+Many AI tools have inherent cybersecurity issues. Your data might be used to train the model, which means that our confidential information might become public for all.`,
+        buttonLabel: 'Continue',
+        guidanceCards: [
+          {
+            title: 'Follow these rules',
+            tone: 'do',
+            items: [
+              "If you use other AI tools in your free time, ensure that you don't input any confidential KONE information.",
+              'Use only KONE-approved AI tools with KONE information. You can find more information about these in the KONE Generative AI & LLM SharePoint [link in rise course].',
+              'If you develop solutions incorporating AI capabilities or employ AI-augmented coding tools, follow the more detailed ground rules designed for developers.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'computer-use-ai-malicious-purposes',
+        kind: 'info',
+        title: 'AI for malicious purposes',
+        body: `AI can be used for malicious purposes. It can be used to generate realistic images and videos to trick people. These are called deepfakes.`,
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'computer-use-ai-deepfake-exercise-1',
+        kind: 'quiz',
+        title: 'Deepfake exercise',
+        scenario: 'Take a look at this picture. Is it real or fake?',
+        visualPanels: [
+          {
+            title: 'Image 1',
+            placeholder: 'REAL',
+            tone: 'real',
+          },
+        ],
+        options: [
+          {
+            id: 'image-1-real',
+            text: 'This image is real.',
+            isCorrect: true,
+            feedback: 'Correct. In this placeholder exercise, this image represents a real image.',
+          },
+          {
+            id: 'image-1-fake',
+            text: 'This image is fake.',
+            isCorrect: false,
+            feedback: 'Not quite. In this placeholder exercise, this image represents a real image.',
+          },
+        ],
+      },
+      {
+        id: 'computer-use-ai-deepfake-exercise-2',
+        kind: 'quiz',
+        title: 'Deepfake exercise',
+        scenario: 'Take a look at this picture. Is it real or fake?',
+        visualPanels: [
+          {
+            title: 'Image 2',
+            placeholder: 'FAKE',
+            tone: 'fake',
+          },
+        ],
+        options: [
+          {
+            id: 'image-2-real',
+            text: 'This image is real.',
+            isCorrect: false,
+            feedback: 'Not quite. In this placeholder exercise, this image represents a fake image.',
+          },
+          {
+            id: 'image-2-fake',
+            text: 'This image is fake.',
+            isCorrect: true,
+            feedback: 'Correct. In this placeholder exercise, this image represents a fake image.',
+          },
+        ],
+      },
+      {
+        id: 'computer-use-ai-deepfake-exercise-3',
+        kind: 'quiz',
+        title: 'Deepfake exercise',
+        scenario: 'Take a look at this picture. Is it real or fake?',
+        visualPanels: [
+          {
+            title: 'Image 3',
+            placeholder: 'FAKE',
+            tone: 'fake',
+          },
+        ],
+        options: [
+          {
+            id: 'image-3-real',
+            text: 'This image is real.',
+            isCorrect: false,
+            feedback: 'Not quite. In this placeholder exercise, this image represents a fake image.',
+          },
+          {
+            id: 'image-3-fake',
+            text: 'This image is fake.',
+            isCorrect: true,
+            feedback: 'Correct. In this placeholder exercise, this image represents a fake image.',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const OFFICE_STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
+  'shared-physical-security': {
+    finalFeedback: 'Great job! You prevented unauthorized access to our information. Our protection level has increased.',
+    steps: [
+      {
+        id: 'physical-security-importance',
+        kind: 'info',
+        title: 'Why physical security matters',
+        body:
+          'Cybersecurity is not only about screens and systems. Visitors, visible papers, open workstations, and uncontrolled access to facilities can all expose important KONE information in the real world.',
+        buttonLabel: 'Continue',
+      },
+      {
+        id: 'office-physical-security-image-review',
+        kind: 'placeholder',
+        title: 'Physical security check',
+        body: 'Identify what\'s wrong in this image (to be added)',
         buttonLabel: 'Continue',
       },
     ],
@@ -2779,13 +3083,26 @@ const FACTORY_STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = 
         title: 'Shared workstations',
         body: `Factory workstations may use shared credentials for approved operational work. Use them only for work tasks, never for personal activity, and always leave the workstation ready for the next user.
 
-Something visual here or an activity
-
-Do: use the shared workstation only for approved factory tasks
-Do: sign out or return the workstation to a clean state when you are done
-Don't: use shared credentials for personal accounts or personal browsing
-Don't: treat a shared workstation like a personal device`,
+Something visual here or an activity`,
         buttonLabel: 'Continue',
+        guidanceCards: [
+          {
+            title: 'Do',
+            tone: 'do',
+            items: [
+              'Use the shared workstation only for approved factory tasks.',
+              'Sign out or return the workstation to a clean state when you are done.',
+            ],
+          },
+          {
+            title: "Don't",
+            tone: 'dont',
+            items: [
+              'Use shared credentials for personal accounts or personal browsing.',
+              'Treat a shared workstation like a personal device.',
+            ],
+          },
+        ],
       },
       {
         id: 'factory-workstation-history',
@@ -2855,6 +3172,10 @@ const FIELD_STANDARD_MISSION_CONFIGS: Record<string, StandardMissionConfig> = {
 };
 
 const getStandardMissionConfig = (challengeId: string, role: Role): StandardMissionConfig | undefined => {
+  if (role === 'office' && OFFICE_STANDARD_MISSION_CONFIGS[challengeId]) {
+    return OFFICE_STANDARD_MISSION_CONFIGS[challengeId];
+  }
+
   if (role === 'factory' && FACTORY_STANDARD_MISSION_CONFIGS[challengeId]) {
     return FACTORY_STANDARD_MISSION_CONFIGS[challengeId];
   }
@@ -3037,7 +3358,7 @@ const FINAL_QUIZ_ROLE_QUESTIONS: Record<Exclude<Role, null>, FinalQuizQuestion[]
           id: 'use-account',
           text: 'Keep using the already open account to save time.',
           isCorrect: false,
-          feedback: 'Workers should not continue using another person’s active session.',
+          feedback: 'Workers should not continue using another personâ€™s active session.',
         },
       ],
     },
@@ -3061,7 +3382,7 @@ const FINAL_QUIZ_ROLE_QUESTIONS: Record<Exclude<Role, null>, FinalQuizQuestion[]
         },
         {
           id: 'borrowed-phone',
-          text: 'Sign in from another person’s phone if your own battery is low.',
+          text: 'Sign in from another personâ€™s phone if your own battery is low.',
           isCorrect: false,
           feedback: 'Work access should stay on approved devices, not borrowed personal phones.',
         },
@@ -3394,27 +3715,19 @@ const StandardChallengeSimulator = ({
     const slide = currentStep.slides[currentCarouselIndex];
     if (!slide) return;
 
-    setCarouselAnswers((prev) => ({ ...prev, [slide.id]: answer }));
+    const nextAnswers = { ...carouselAnswers, [slide.id]: answer };
+    const isLastSlide = currentCarouselIndex === currentStep.slides.length - 1;
+
+    setCarouselAnswers(nextAnswers);
     onClearFeedback();
-  };
 
-  const handleCarouselSubmit = () => {
-    if (currentStep.kind !== 'carousel') return;
-
-    const allAnswered = currentStep.slides.every((slide) => carouselAnswers[slide.id]);
-    if (!allAnswered) {
-      onAnswer(false, 'Review all three workstation history views before checking your answer.');
+    if (!isLastSlide) {
+      setCurrentCarouselIndex((prev) => prev + 1);
       return;
     }
 
-    const isCorrect = currentStep.slides.every((slide) => carouselAnswers[slide.id] === slide.correctAnswer);
-    if (!isCorrect) {
-      onCheckpointResult(currentCheckpointId, false);
-      onAnswer(false, currentStep.errorFeedback);
-      return;
-    }
-
-    onCheckpointResult(currentCheckpointId, true);
+    const isCorrect = currentStep.slides.every((slideItem) => nextAnswers[slideItem.id] === slideItem.correctAnswer);
+    onCheckpointResult(currentCheckpointId, isCorrect);
     advanceOrComplete();
   };
 
@@ -3424,7 +3737,7 @@ const StandardChallengeSimulator = ({
       return;
     }
 
-    onClearFeedback();
+    advanceOrComplete(`You completed the ${challenge.topic.toLowerCase()} mission. Keep these practices in mind as you move forward.`);
   };
 
   if (step === 'intro') {
@@ -3524,6 +3837,27 @@ const StandardChallengeSimulator = ({
             <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-blue" />
             <div className="space-y-3">
               <h3 className="text-xl xl:text-2xl font-bold text-black">{currentStep.title}</h3>
+              {currentStep.visualPanels && currentStep.visualPanels.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  {currentStep.visualPanels.map((panel) => (
+                    <div
+                      key={panel.title}
+                      className={`rounded-2xl border p-5 xl:p-6 ${
+                        panel.tone === 'real' || panel.tone === 'safe'
+                          ? 'border-emerald-200 bg-emerald-50/80'
+                          : 'border-rose-200 bg-rose-50/80'
+                      }`}
+                    >
+                      <p className="text-xs font-mono tracking-widest text-black/50 uppercase">{panel.title}</p>
+                      <div className="mt-4 h-40 rounded-xl border border-dashed border-black/20 bg-white/80 grid place-items-center">
+                        <span className="text-2xl xl:text-3xl font-black tracking-[0.25em] text-black/55">
+                          {panel.placeholder}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <p className="text-lg xl:text-xl text-black/80 leading-relaxed italic">"{currentStep.scenario}"</p>
             </div>
           </div>
@@ -3565,6 +3899,32 @@ const StandardChallengeSimulator = ({
             >
               <p className="body-copy text-black/80 whitespace-pre-line">{currentStep.body}</p>
             </div>
+            {currentStep.guidanceCards && currentStep.guidanceCards.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentStep.guidanceCards.map((card) => (
+                  <div
+                    key={card.title}
+                    className={`rounded-xl border p-5 xl:p-6 space-y-4 ${
+                      card.tone === 'do'
+                        ? 'border-emerald-200 bg-emerald-50/80'
+                        : 'border-rose-200 bg-rose-50/80'
+                    }`}
+                  >
+                    <p className="text-xs font-mono tracking-widest text-black/55 uppercase">{card.title}</p>
+                    <div className="space-y-3">
+                      {card.items.map((item) => (
+                        <div
+                          key={item}
+                          className="rounded-lg border border-white/80 bg-white/70 px-4 py-3 text-sm xl:text-base text-black/80"
+                        >
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex justify-center">
               <button
                 type="button"
@@ -3613,28 +3973,15 @@ const StandardChallengeSimulator = ({
                   <button
                     key={option.id}
                     type="button"
-                    disabled={!!feedback}
                     onClick={() => handleCarouselAnswer(option.id)}
-                    className={`w-full p-4 xl:p-5 rounded-xl border text-left text-sm xl:text-base transition-all ${
-                      carouselAnswers[currentStep.slides[currentCarouselIndex].id] === option.id
-                        ? 'bg-brand-blue/10 border-brand-blue text-brand-blue'
-                        : 'bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5'
-                    }`}
+                    className="w-full p-4 xl:p-5 rounded-xl border text-left text-sm xl:text-base transition-all bg-white border-black/10 text-black/80 hover:border-brand-blue hover:bg-brand-blue/5"
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  disabled={currentCarouselIndex === 0}
-                  onClick={() => setCurrentCarouselIndex((prev) => Math.max(prev - 1, 0))}
-                  className="px-5 py-3 rounded-lg border border-black/15 text-black text-sm xl:text-base font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-brand-blue/5 transition-colors"
-                >
-                  Previous
-                </button>
+              <div className="flex justify-center">
                 <div className="flex gap-2">
                   {currentStep.slides.map((slide, index) => (
                     <div
@@ -3645,27 +3992,6 @@ const StandardChallengeSimulator = ({
                     />
                   ))}
                 </div>
-                <button
-                  type="button"
-                  disabled={currentCarouselIndex === currentStep.slides.length - 1}
-                  onClick={() =>
-                    setCurrentCarouselIndex((prev) => Math.min(prev + 1, currentStep.slides.length - 1))
-                  }
-                  className="px-5 py-3 rounded-lg border border-black/15 text-black text-sm xl:text-base font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-brand-blue/5 transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-
-              <div className="flex justify-center">
-                <button
-                  type="button"
-                  disabled={!!feedback}
-                  onClick={handleCarouselSubmit}
-                  className="px-6 py-3 xl:px-7 xl:py-4 rounded-lg bg-brand-blue text-white text-sm xl:text-base font-bold hover:opacity-90 transition-colors"
-                >
-                  Check workstation history
-                </button>
               </div>
             </div>
           </div>
@@ -3717,7 +4043,7 @@ const StandardChallengeSimulator = ({
                       : 'bg-white hover:bg-brand-blue/5 text-black border border-black/15'
                   }`}
                 >
-                  {feedback.isCorrect ? 'Continue step' : 'Try again'}
+                  {feedback.isCorrect ? 'Continue step' : 'Continue'}
                 </button>
               </div>
             </div>
@@ -4501,3 +4827,4 @@ export default function App() {
     </div>
   );
 }
+
